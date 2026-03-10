@@ -6,12 +6,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import ca.sheridancollege.medreminder.data.datastore.UserPreferencesDataStore
 import ca.sheridancollege.medreminder.navigation.AppNavigation
 import ca.sheridancollege.medreminder.ui.theme.MedReminderTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var userPreferences: UserPreferencesDataStore
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -25,7 +33,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MedReminderTheme {
+            val systemDark = isSystemInDarkTheme()
+            val darkTheme by userPreferences.darkTheme.collectAsState(initial = systemDark)
+
+            MedReminderTheme(darkTheme = darkTheme, dynamicColor = false) {
                 AppNavigation()
             }
         }
