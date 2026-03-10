@@ -2,35 +2,49 @@ package ca.sheridancollege.medreminder.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// F1 "Paddock" Inspired Palette
-val DeepPaddock = Color(0xFF000000)
-val CardDark = Color(0xFF121212)
-val CardLight = Color(0xFFF1F2F3)
+// Material 3 Expressive Palette - Vibrant & Dynamic
+val PrimaryLight = Color(0xFF6750A4)
+val OnPrimaryLight = Color(0xFFFFFFFF)
+val PrimaryContainerLight = Color(0xFFEADDFF)
+val OnPrimaryContainerLight = Color(0xFF21005D)
 
-// High-Contrast Accents
-val F1Red = Color(0xFFE10600)
-val F1Orange = Color(0xFFFF8700)
-val F1Teal = Color(0xFF00D2BE)
-val F1Yellow = Color(0xFFFFF500)
-val F1Blue = Color(0xFF0000FF)
-val F1Purple = Color(0xFF7C3AED)
+val SecondaryLight = Color(0xFF625B71)
+val OnSecondaryLight = Color(0xFFFFFFFF)
+val SecondaryContainerLight = Color(0xFFE8DEF8)
+val OnSecondaryContainerLight = Color(0xFF1D192B)
 
-// Text Colors
-val TextWhite = Color(0xFFFFFFFF)
-val TextGray = Color(0xFF949498)
-val TextBlack = Color(0xFF000000)
+val TertiaryLight = Color(0xFF7D5260)
+val OnTertiaryLight = Color(0xFFFFFFFF)
+val TertiaryContainerLight = Color(0xFFFFD8E4)
+val OnTertiaryContainerLight = Color(0xFF31111D)
 
-// Card Status
-val StatusDone = Color(0xFF00D2BE)
-val StatusPending = Color(0xFFE10600)
-val StatusUpcoming = Color(0xFFFF8700)
+val ErrorLight = Color(0xFFB3261E)
+val OnErrorLight = Color(0xFFFFFFFF)
+val ErrorContainerLight = Color(0xFFF9DEDC)
+val OnErrorContainerLight = Color(0xFF410E0B)
 
-// Gradient Compatibility (for transition from aesthetic glass to F1)
-val PrimaryGradient = listOf(F1Red, Color(0xFF8B0000))
-val SurfaceGradient = listOf(DeepPaddock, Color(0xFF1A1A1A))
-val GlassWhite = Color(0xFF1E1E1E)
-val GlassBorder = Color(0xFF2C2C2C)
-val SoftLavender = Color(0xFFADB5BD)
-val CyberTeal = F1Teal
-val MidnightBlue = DeepPaddock
-val ErrorRose = F1Red
+val BackgroundLight = Color(0xFFFEF7FF)
+val OnBackgroundLight = Color(0xFF1D1B20)
+val SurfaceLight = Color(0xFFFEF7FF)
+val OnSurfaceLight = Color(0xFF1D1B20)
+
+// Dark Mode Expressive
+val PrimaryDark = Color(0xFFD0BCFF)
+val OnPrimaryDark = Color(0xFF381E72)
+val PrimaryContainerDark = Color(0xFF4F378B)
+val OnPrimaryContainerDark = Color(0xFFEADDFF)
+
+val SecondaryDark = Color(0xFFCCC2DC)
+val OnSecondaryDark = Color(0xFF332D41)
+val SecondaryContainerDark = Color(0xFF4A4458)
+val OnSecondaryContainerDark = Color(0xFFE8DEF8)
+
+val BackgroundDark = Color(0xFF141218)
+val OnBackgroundDark = Color(0xFFE6E1E5)
+val SurfaceDark = Color(0xFF141218)
+val OnSurfaceDark = Color(0xFFE6E1E5)
+
+// Expressive Accents
+val SuccessExpressive = Color(0xFF4CAF50)
+val WarningExpressive = Color(0xFFFFC107)
+val InfoExpressive = Color(0xFF2196F3)

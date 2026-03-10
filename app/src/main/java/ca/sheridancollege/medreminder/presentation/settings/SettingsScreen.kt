@@ -1,12 +1,8 @@
 package ca.sheridancollege.medreminder.presentation.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
@@ -25,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import ca.sheridancollege.medreminder.presentation.auth.AuthViewModel
 import coil.compose.AsyncImage
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -33,164 +30,165 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val authState by authViewModel.state.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp)
-            .verticalScroll(rememberScrollState())
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Spacer(Modifier.height(32.dp))
-        
-        // Minimalist Header
-        Column {
-            Text(
-                "PREFERENCES",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 2.sp
-            )
-            Text(
-                "Settings",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Light,
-                color = MaterialTheme.colorScheme.onBackground
+    Scaffold(
+        topBar = {
+            LargeTopAppBar(
+                title = {
+                    Text(
+                        "Settings",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             )
         }
-        
-        Spacer(Modifier.height(32.dp))
-
-        // Profile Section (Minimalist)
-        authState.user?.let { user ->
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                    .padding(16.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (user.photoUrl != null) {
-                        AsyncImage(
-                            model = user.photoUrl,
-                            contentDescription = "Profile Picture",
-                            modifier = Modifier.size(48.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Outlined.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Profile Section
+            authState.user?.let { user ->
+                ListItem(
+                    headlineContent = { Text(user.displayName ?: "User", fontWeight = FontWeight.Bold) },
+                    supportingContent = { Text(user.email ?: "") },
+                    leadingContent = {
+                        if (user.photoUrl != null) {
+                            AsyncImage(
+                                model = user.photoUrl,
+                                contentDescription = "Profile Picture",
+                                modifier = Modifier.size(56.dp).clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Outlined.Person, null)
+                                }
+                            }
+                        }
+                    },
+                    trailingContent = {
+                        IconButton(onClick = { authViewModel.signOut() }) {
+                            Icon(Icons.AutoMirrored.Outlined.Logout, null, tint = MaterialTheme.colorScheme.error)
                         }
                     }
-                    
-                    Spacer(Modifier.width(16.dp))
-                    
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(user.displayName ?: "User", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                        Text(user.email ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-
-                    IconButton(onClick = { authViewModel.signOut() }) {
-                        Icon(Icons.AutoMirrored.Outlined.Logout, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                    }
-                }
+                )
             }
-        }
 
-        Spacer(Modifier.height(32.dp))
-        Text("APP SETTINGS", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
-        Spacer(Modifier.height(16.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        MinimalSettingsRow(title = "Notifications", subtitle = "Reminders for medication") {
-            Switch(
-                checked = uiState.notificationsEnabled,
-                onCheckedChange = viewModel::setNotificationsEnabled,
-                colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
+            Text(
+                "Preferences",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
-        }
-        
-        MinimalSettingsRow(title = "Dark Theme", subtitle = "Use dark mode aesthetics") {
-            Switch(
-                checked = uiState.darkTheme,
-                onCheckedChange = viewModel::setDarkTheme
+
+            ListItem(
+                headlineContent = { Text("Notifications") },
+                supportingContent = { Text("Receive medication reminders") },
+                trailingContent = {
+                    Switch(
+                        checked = uiState.notificationsEnabled,
+                        onCheckedChange = viewModel::setNotificationsEnabled
+                    )
+                }
             )
-        }
 
-        MinimalSettingsRow(title = "Snooze Duration", subtitle = "${uiState.snoozeMinutes} minutes") {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { if (uiState.snoozeMinutes > 5) viewModel.setSnoozeMinutes(uiState.snoozeMinutes - 5) }) {
-                    Text("-", style = MaterialTheme.typography.titleLarge)
+            ListItem(
+                headlineContent = { Text("Dark Theme") },
+                supportingContent = { Text("Switch between light and dark mode") },
+                trailingContent = {
+                    Switch(
+                        checked = uiState.darkTheme,
+                        onCheckedChange = viewModel::setDarkTheme
+                    )
                 }
-                Text("${uiState.snoozeMinutes}m", style = MaterialTheme.typography.bodyMedium)
-                TextButton(onClick = { if (uiState.snoozeMinutes < 60) viewModel.setSnoozeMinutes(uiState.snoozeMinutes + 5) }) {
-                    Text("+", style = MaterialTheme.typography.titleLarge)
+            )
+
+            ListItem(
+                headlineContent = { Text("Snooze Duration") },
+                supportingContent = { Text("${uiState.snoozeMinutes} minutes") },
+                trailingContent = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { if (uiState.snoozeMinutes > 5) viewModel.setSnoozeMinutes(uiState.snoozeMinutes - 5) }) {
+                            Icon(Icons.Outlined.RemoveCircleOutline, null)
+                        }
+                        Text("${uiState.snoozeMinutes}m", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { if (uiState.snoozeMinutes < 60) viewModel.setSnoozeMinutes(uiState.snoozeMinutes + 5) }) {
+                            Icon(Icons.Outlined.AddCircleOutline, null)
+                        }
+                    }
                 }
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Text(
+                "Account",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            ListItem(
+                headlineContent = { Text("Reset All Data", color = MaterialTheme.colorScheme.error) },
+                supportingContent = { Text("Deletes all medications and history") },
+                trailingContent = {
+                    TextButton(onClick = { viewModel.onResetAllRequested() }) {
+                        Text("RESET", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    }
+                }
+            )
+
+            Spacer(Modifier.height(32.dp))
+            
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "MedReminder",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    letterSpacing = 2.sp
+                )
+                Text(
+                    "v1.0.0",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                )
             }
+            
+            Spacer(Modifier.height(48.dp))
         }
-
-        Spacer(Modifier.height(32.dp))
-        Text("DANGER ZONE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error, letterSpacing = 1.sp)
-        Spacer(Modifier.height(16.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
-                .clickable { viewModel.onResetAllRequested() }
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.DeleteSweep, null, tint = MaterialTheme.colorScheme.error)
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text("Reset All Data", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
-                    Text("Deletes history and medications", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(48.dp))
-        
-        // App Info (Minimalist)
-        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("MEDREMINDER", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 3.sp)
-            Text("v1.0.0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-        }
-        
-        Spacer(Modifier.height(48.dp))
     }
 
-    // Reset Dialog (Minimalist)
     if (uiState.showResetConfirm) {
         AlertDialog(
             onDismissRequest = { viewModel.onResetAllDismissed() },
-            title = { Text("Factory Reset", fontWeight = FontWeight.Light) },
-            text = { Text("All your data will be permanently deleted.") },
+            title = { Text("Reset All Data?") },
+            text = { Text("This will permanently delete all your medications and history. This action cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.onResetAllConfirmed() }) { Text("DELETE EVERYTHING", color = MaterialTheme.colorScheme.error) }
+                Button(
+                    onClick = { viewModel.onResetAllConfirmed() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("YES, RESET")
+                }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.onResetAllDismissed() }) { Text("CANCEL") }
-            },
-            shape = RoundedCornerShape(16.dp)
+                TextButton(onClick = { viewModel.onResetAllDismissed() }) {
+                    Text("CANCEL")
+                }
+            }
         )
     }
-}
-
-@Composable
-fun MinimalSettingsRow(title: String, subtitle: String, action: @Composable () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        action()
-    }
-    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 0.5.dp)
 }
