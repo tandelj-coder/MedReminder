@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -27,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import ca.sheridancollege.medreminder.domain.model.Medication
-import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
@@ -105,10 +103,9 @@ fun TodayScreen(
                     )
 
                     // Next dose countdown
-                    val pendingMeds = uiState.medications.filter { !it.isTakenToday }
-                    if (pendingMeds.isNotEmpty()) {
+                    uiState.nextDoseInfo?.let { info ->
                         Spacer(Modifier.height(10.dp))
-                        NextDoseCountdown(medications = pendingMeds)
+                        NextDoseCountdown(info = info)
                     }
                 }
             }
@@ -198,79 +195,58 @@ fun TodayScreen(
 }
 
 @Composable
-fun NextDoseCountdown(medications: List<Medication>) {
-    var countdown by remember { mutableStateOf("") }
-    var nextMedName by remember { mutableStateOf("") }
+fun NextDoseCountdown(info: NextDoseInfo) {
+    val totalSeconds = (info.remainingTimeMillis / 1000).coerceAtLeast(0)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
 
-    LaunchedEffect(medications) {
-        while (true) {
-            val now = Calendar.getInstance()
-            val nowMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-
-            val next = medications
-                .map { med ->
-                    val medMinutes = med.timeHour * 60 + med.timeMinute
-                    val diff = if (medMinutes >= nowMinutes) medMinutes - nowMinutes
-                               else (24 * 60 - nowMinutes) + medMinutes
-                    Pair(med, diff)
-                }
-                .minByOrNull { it.second }
-
-            if (next != null) {
-                val diffMins = next.second
-                val hours = diffMins / 60
-                val mins = diffMins % 60
-                val secs = 59 - now.get(Calendar.SECOND)
-                nextMedName = next.first.name
-                countdown = if (hours > 0) "${hours}h ${mins}m ${secs}s" else "${mins}m ${secs}s"
-            }
-            delay(1000L)
-        }
+    val countdownText = when {
+        hours > 0 -> "${hours}h ${minutes}m ${seconds}s"
+        else -> "${minutes}m ${seconds}s"
     }
 
-    if (countdown.isNotEmpty()) {
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 2.dp,
-            modifier = Modifier.fillMaxWidth()
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Alarm,
-                        null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Column {
-                        Text(
-                            "Next dose",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            nextMedName,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-                Text(
-                    countdown,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                Icon(
+                    Icons.Default.Alarm,
+                    null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
                 )
+                Column {
+                    Text(
+                        "Next dose",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        info.medicationName,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
+            Text(
+                countdownText,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+            )
         }
     }
 }

@@ -11,8 +11,10 @@ import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenResult
 import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenUseCase
 import ca.sheridancollege.medreminder.domain.usecase.ResetDailyStatusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 data class TodayUiState(
@@ -21,7 +23,13 @@ data class TodayUiState(
     val isLoading: Boolean = true,
     val doubleDoseWarning: DoubleDoseWarningState? = null,
     val snackbarMessage: String? = null,
-    val showResetConfirm: Boolean = false
+    val showResetConfirm: Boolean = false,
+    val nextDoseInfo: NextDoseInfo? = null
+)
+
+data class NextDoseInfo(
+    val medicationName: String,
+    val remainingTimeMillis: Long
 )
 
 data class DoubleDoseWarningState(
@@ -45,6 +53,7 @@ class TodayViewModel @Inject constructor(
     init {
         loadMedications()
         loadStats()
+        startCountdownTimer()
     }
 
     private fun loadMedications() {
@@ -53,7 +62,42 @@ class TodayViewModel @Inject constructor(
                 .catch { _uiState.update { it.copy(isLoading = false) } }
                 .collect { meds ->
                     _uiState.update { it.copy(medications = meds, isLoading = false) }
+                    updateNextDose(meds)
                 }
+        }
+    }
+
+    private fun startCountdownTimer() {
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                updateNextDose(_uiState.value.medications)
+            }
+        }
+    }
+
+    private fun updateNextDose(meds: List<Medication>) {
+        val now = Calendar.getInstance()
+        val nextMed = meds
+            .filter { !it.isTakenToday }
+            .map { med ->
+                val target = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, med.timeHour)
+                    set(Calendar.MINUTE, med.timeMinute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                med to target.timeInMillis - now.timeInMillis
+            }
+            .filter { it.second > 0 }
+            .minByOrNull { it.second }
+
+        _uiState.update {
+            it.copy(
+                nextDoseInfo = nextMed?.let { (med, diff) ->
+                    NextDoseInfo(med.name, diff)
+                }
+            )
         }
     }
 
