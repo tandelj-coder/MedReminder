@@ -4,6 +4,9 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,10 +14,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,10 +30,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ca.sheridancollege.medreminder.R
+import ca.sheridancollege.medreminder.ui.theme.*
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -49,7 +52,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // Google Sign-In options
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestIdToken(context.getString(R.string.default_web_client_id))
         .requestEmail()
@@ -76,165 +78,206 @@ fun LoginScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // App Icon
-        Icon(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-            contentDescription = "App Logo",
-            modifier = Modifier.size(100.dp),
-            tint = Color.Unspecified
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = if (isSignUp) "Create Account" else "Welcome Back",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = if (isSignUp) "Sign up to start tracking your health." else "Sign in to continue your progress.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.padding(top = 8.dp),
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Email Field
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email Address") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Password Field
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(image, contentDescription = null)
-                }
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (state.isLoading) {
-            CircularProgressIndicator()
-        } else {
-            Button(
-                onClick = {
-                    if (isSignUp) viewModel.signUpWithEmail(email, password)
-                    else viewModel.signInWithEmail(email, password)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp)
+    Scaffold(containerColor = DeepPaddock) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // F1 Style Logo Container
+            Surface(
+                modifier = Modifier.size(100.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = CardDark,
+                border = BorderStroke(2.dp, F1Red)
             ) {
-                Text(
-                    text = if (isSignUp) "Sign Up" else "Login",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.padding(20.dp),
+                    tint = Color.Unspecified
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "OR",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = if (isSignUp) "JOIN THE GRID" else "WELCOME BACK",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                letterSpacing = 1.sp
+            )
+
+            Text(
+                text = if (isSignUp) "Push your limits." else "Ready for the next session?",
+                fontSize = 16.sp,
+                color = TextGray,
+                modifier = Modifier.padding(top = 8.dp),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            PaddockAuthField(
+                value = email,
+                onValueChange = { email = it },
+                label = "EMAIL",
+                icon = Icons.Outlined.Email,
+                keyboardType = KeyboardType.Email
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Google Button
-            OutlinedButton(
-                onClick = { launcher.launch(googleSignInClient.signInIntent) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground), // Replace with google icon if available
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = Color.Unspecified
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
+            PaddockAuthField(
+                value = password,
+                onValueChange = { password = it },
+                label = "PASSWORD",
+                icon = Icons.Outlined.Lock,
+                keyboardType = KeyboardType.Password,
+                isPassword = true,
+                passwordVisible = passwordVisible,
+                onPasswordToggle = { passwordVisible = !passwordVisible }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            if (state.isLoading) {
+                CircularProgressIndicator(color = F1Red)
+            } else {
+                Button(
+                    onClick = {
+                        if (isSignUp) viewModel.signUpWithEmail(email, password)
+                        else viewModel.signInWithEmail(email, password)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = F1Red)
+                ) {
                     Text(
-                        text = "Continue with Google",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        text = if (isSignUp) "CREATE ACCOUNT" else "SIGN IN",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp,
+                        color = Color.White
                     )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(text = "OR", color = TextGray, fontWeight = FontWeight.Bold)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Surface(
+                    onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = CardDark,
+                    border = BorderStroke(1.dp, TextGray)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = Color.Unspecified
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Continue with Google",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(text = if (isSignUp) "Already a member? " else "New to the grid? ", color = TextGray)
+                Text(
+                    text = if (isSignUp) "SIGN IN" else "SIGN UP",
+                    fontWeight = FontWeight.Black,
+                    color = F1Red,
+                    modifier = Modifier.clickable {
+                        isSignUp = !isSignUp
+                        viewModel.clearError()
+                    }
+                )
+            }
+
+            state.error?.let {
+                Text(
+                    text = it,
+                    color = F1Red,
+                    modifier = Modifier.padding(top = 24.dp),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Toggle Sign Up / Login
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = if (isSignUp) "Already have an account? " else "Don't have an account? ",
-                fontSize = 14.sp
-            )
-            Text(
-                text = if (isSignUp) "Login" else "Sign Up",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                textDecoration = TextDecoration.Underline,
-                modifier = Modifier.clickable {
-                    isSignUp = !isSignUp
-                    viewModel.clearError()
+@Composable
+fun PaddockAuthField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    keyboardType: KeyboardType,
+    isPassword: Boolean = false,
+    passwordVisible: Boolean = false,
+    onPasswordToggle: () -> Unit = {}
+) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = TextGray, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(8.dp))
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, TextGray.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = CardDark,
+                unfocusedContainerColor = CardDark,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = F1Red,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            ),
+            shape = RoundedCornerShape(12.dp),
+            leadingIcon = { Icon(icon, null, tint = TextGray) },
+            trailingIcon = if (isPassword) {
+                {
+                    val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    IconButton(onClick = onPasswordToggle) {
+                        Icon(image, null, tint = TextGray)
+                    }
                 }
-            )
-        }
-
-        state.error?.let {
-            Text(
-                text = it,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 16.dp),
-                textAlign = TextAlign.Center,
-                fontSize = 14.sp
-            )
-        }
+            } else null,
+            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            singleLine = true
+        )
     }
 }
