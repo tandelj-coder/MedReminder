@@ -1,6 +1,6 @@
 package ca.sheridancollege.medreminder.presentation.settings
 
-import UserPreferencesDataStore
+import ca.sheridancollege.medreminder.data.datastore.UserPreferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel

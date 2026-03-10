@@ -1,6 +1,6 @@
 package ca.sheridancollege.medreminder.domain.usecase
 
-import UserPreferencesDataStore
+import ca.sheridancollege.medreminder.data.datastore.UserPreferencesDataStore
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.domain.model.AdherenceStats
 import kotlinx.coroutines.flow.Flow

@@ -1,6 +1,6 @@
 package ca.sheridancollege.medreminder.worker
 
-import UserPreferencesDataStore
+import ca.sheridancollege.medreminder.data.datastore.UserPreferencesDataStore
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
