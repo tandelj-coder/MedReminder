@@ -10,14 +10,17 @@ import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import ca.sheridancollege.medreminder.MainActivity
+import ca.sheridancollege.medreminder.data.datastore.UserPreferencesDataStore
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class MedicationReminderWorker @AssistedInject constructor(
     @Assisted private val context: Context,
-    @Assisted params: WorkerParameters
+    @Assisted params: WorkerParameters,
+    private val userPreferences: UserPreferencesDataStore
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -71,6 +74,12 @@ class MedicationReminderWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        // Check if notifications are enabled in settings
+        val isEnabled = userPreferences.notificationsEnabled.first()
+        if (!isEnabled) {
+            return Result.success()
+        }
+
         val medName = inputData.getString(KEY_MED_NAME) ?: return Result.failure()
         val dosage = inputData.getString(KEY_MED_DOSAGE) ?: ""
         showNotification(medName, dosage)
