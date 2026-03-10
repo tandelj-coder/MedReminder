@@ -5,39 +5,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentPrimary,
-    secondary = AccentSecondary,
-    background = DeepBlack,
-    surface = DarkGray,
-    onPrimary = Color.White,
-    onSecondary = DarkTextPrimary,
-    onBackground = DarkTextPrimary,
-    onSurface = DarkTextPrimary,
-    surfaceVariant = DarkBorder,
-    onSurfaceVariant = DarkTextSecondary,
-    outline = DarkBorder,
-    error = ErrorRed
+    primary = CyberTeal,
+    secondary = ElectricViolet,
+    background = MidnightBlue,
+    surface = DeepPurple,
+    onPrimary = MidnightBlue,
+    onSecondary = Color.White,
+    onBackground = Color.White,
+    onSurface = Color.White,
+    surfaceVariant = GlassWhite,
+    onSurfaceVariant = SoftLavender,
+    outline = GlassBorder,
+    error = ErrorRose
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = AccentPrimary,
-    secondary = AccentSecondary,
-    background = SoftGray,
+    primary = ElectricViolet,
+    secondary = CyberTeal,
+    background = LightSurface,
     surface = Color.White,
     onPrimary = Color.White,
-    onSecondary = TextPrimary,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    surfaceVariant = BorderGray,
-    onSurfaceVariant = TextSecondary,
-    outline = BorderGray,
-    error = ErrorRed
+    onSecondary = MidnightBlue,
+    onBackground = MidnightBlue,
+    onSurface = MidnightBlue,
+    surfaceVariant = Color.White,
+    onSurfaceVariant = MidnightBlue,
+    outline = Color.LightGray,
+    error = ErrorRose
 )
 
 @Composable
 fun MedReminderTheme(
     darkTheme: Boolean = false,
-    dynamicColor: Boolean = false, // We'll keep this off for a consistent minimalist look
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
