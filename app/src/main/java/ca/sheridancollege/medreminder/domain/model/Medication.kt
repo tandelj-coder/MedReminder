@@ -10,7 +10,16 @@ data class Medication(
     val isTakenToday: Boolean = false,
     val takenTimestamp: Long? = null,
     val isActive: Boolean = true,
-    val notes: String = ""
+    val notes: String = "",
+    // Visual Pill Features
+    val pillColor: String = "#2196F3", // Default Blue
+    val pillShape: PillShape = PillShape.ROUND,
+    // Refill Tracking
+    val stockQuantity: Int = 0,
+    val remainingQuantity: Int = 0,
+    val refillThreshold: Int = 5,
+    // NFC Pairing
+    val nfcTagId: String? = null
 ) {
     fun formattedTime(): String {
         val hour = if (timeHour == 0) 12 else if (timeHour > 12) timeHour - 12 else timeHour
@@ -24,6 +33,13 @@ data class Medication(
             .get(java.util.Calendar.DAY_OF_WEEK)
         return days.any { it.calendarValue == today }
     }
+}
+
+enum class PillShape(val displayName: String) {
+    ROUND("Round"),
+    CAPSULE("Capsule"),
+    OVAL("Oval"),
+    SQUARE("Square")
 }
 
 enum class DayOfWeek(
@@ -42,7 +58,7 @@ enum class DayOfWeek(
     companion object {
         fun fromCode(code: String): DayOfWeek? = values().find { it.code == code }
         fun fromCodes(codes: String): List<DayOfWeek> =
-            codes.split(",").mapNotNull { fromCode(it.trim()) }
+            if (codes.isBlank()) emptyList() else codes.split(",").mapNotNull { fromCode(it.trim()) }
         fun toCodes(days: List<DayOfWeek>): String =
             days.joinToString(",") { it.code }
     }

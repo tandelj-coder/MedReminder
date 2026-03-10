@@ -7,6 +7,7 @@ import ca.sheridancollege.medreminder.data.local.entity.MedicationEntity
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 import ca.sheridancollege.medreminder.domain.model.IntakeLog
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.model.PillShape
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
@@ -65,7 +66,20 @@ class MedicationRepositoryImpl @Inject constructor(
         scheduledHour: Int,
         scheduledMinute: Int
     ) {
-        medicationDao.markAsTaken(medicationId, timestamp)
+        val entity = medicationDao.getMedicationById(medicationId) ?: return
+        
+        // Decrement remaining quantity if tracking is enabled
+        val updatedEntity = if (entity.stockQuantity > 0) {
+            entity.copy(
+                isTakenToday = true,
+                takenTimestamp = timestamp,
+                remainingQuantity = (entity.remainingQuantity - 1).coerceAtLeast(0)
+            )
+        } else {
+            entity.copy(isTakenToday = true, takenTimestamp = timestamp)
+        }
+        
+        medicationDao.update(updatedEntity)
 
         val scheduled = Calendar.getInstance().apply {
             timeInMillis = timestamp
@@ -79,7 +93,7 @@ class MedicationRepositoryImpl @Inject constructor(
         intakeLogDao.insert(
             IntakeLogEntity(
                 medicationId = medicationId,
-                medicationName = medicationDao.getMedicationById(medicationId)?.name ?: "",
+                medicationName = entity.name,
                 takenAt = timestamp,
                 scheduledHour = scheduledHour,
                 scheduledMinute = scheduledMinute,
@@ -87,10 +101,7 @@ class MedicationRepositoryImpl @Inject constructor(
             )
         )
         
-        // Also sync the updated medication status to Firestore
-        medicationDao.getMedicationById(medicationId)?.let {
-            firestoreSyncRepository.uploadMedication(it.toDomain())
-        }
+        firestoreSyncRepository.uploadMedication(updatedEntity.toDomain())
     }
 
     override suspend fun resetAllDailyStatus() =
@@ -123,7 +134,13 @@ class MedicationRepositoryImpl @Inject constructor(
         isTakenToday = isTakenToday,
         takenTimestamp = takenTimestamp,
         isActive = isActive,
-        notes = notes
+        notes = notes,
+        pillColor = pillColor,
+        pillShape = PillShape.valueOf(pillShape),
+        stockQuantity = stockQuantity,
+        remainingQuantity = remainingQuantity,
+        refillThreshold = refillThreshold,
+        nfcTagId = nfcTagId
     )
 
     private fun Medication.toEntity() = MedicationEntity(
@@ -136,7 +153,13 @@ class MedicationRepositoryImpl @Inject constructor(
         isTakenToday = isTakenToday,
         takenTimestamp = takenTimestamp,
         isActive = isActive,
-        notes = notes
+        notes = notes,
+        pillColor = pillColor,
+        pillShape = pillShape.name,
+        stockQuantity = stockQuantity,
+        remainingQuantity = remainingQuantity,
+        refillThreshold = refillThreshold,
+        nfcTagId = nfcTagId
     )
 
     private fun IntakeLogEntity.toDomain() = IntakeLog(

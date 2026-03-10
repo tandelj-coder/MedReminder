@@ -15,5 +15,12 @@ data class MedicationEntity(
     val isTakenToday: Boolean = false,
     val takenTimestamp: Long? = null,
     val isActive: Boolean = true,
-    val notes: String = ""
+    val notes: String = "",
+    // Unique features
+    val pillColor: String = "#2196F3",
+    val pillShape: String = "ROUND",
+    val stockQuantity: Int = 0,
+    val remainingQuantity: Int = 0,
+    val refillThreshold: Int = 5,
+    val nfcTagId: String? = null
 )
