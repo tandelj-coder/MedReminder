@@ -1,6 +1,7 @@
 package ca.sheridancollege.medreminder.data.repository
 
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -14,6 +15,18 @@ class FirestoreSyncRepository @Inject constructor(
     private val auth: FirebaseAuth
 ) {
     private val userId: String? get() = auth.currentUser?.uid
+
+    suspend fun saveUserInfo(user: User) {
+        val data = hashMapOf(
+            "uid" to user.uid,
+            "email" to user.email,
+            "displayName" to user.displayName,
+            "photoUrl" to user.photoUrl,
+            "lastLogin" to System.currentTimeMillis()
+        )
+        firestore.collection("users").document(user.uid)
+            .set(data, SetOptions.merge()).await()
+    }
 
     suspend fun uploadMedication(medication: Medication) {
         val uid = userId ?: return

@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1050051515622-rqtf5or0c12c4krb3mi1a05or85ou3ia.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ca.sheridancollege.medreminder",
+            "certificate_hash": "0c75417de6b0f35b681a270c365ee3377a456003"
+          }
+        },
+        {
           "client_id": "1050051515622-7ph83a5k6kpcu8ou8f5p8khdi5uq5ls1.apps.googleusercontent.com",
           "client_type": 3
         }
