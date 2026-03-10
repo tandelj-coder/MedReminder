@@ -25,7 +25,7 @@ class SettingsViewModel @Inject constructor(
         dataStore.snoozeMinutes,
         dataStore.darkTheme,
         dataStore.streakCount
-    ) { notifications: Boolean, snooze: Int, dark: Boolean, streak: Int ->
+    ) { notifications, snooze, dark, streak ->
         SettingsUiState(
             notificationsEnabled = notifications,
             snoozeMinutes = snooze,
