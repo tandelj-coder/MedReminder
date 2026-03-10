@@ -92,9 +92,20 @@ fun AppNavigation(
                 )
             }
             composable(Screen.Today.route) {
-                TodayScreen(onEditMedication = { id ->
-                    navController.navigate("edit/$id")
-                })
+                TodayScreen(
+                    onEditMedication = { id ->
+                        navController.navigate("edit/$id")
+                    },
+                    onNavigateToProfile = {
+                        navController.navigate(Screen.Settings.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
             }
             composable(Screen.Add.route) {
                 AddMedicationScreen(onNavigateBack = { navController.popBackStack() })

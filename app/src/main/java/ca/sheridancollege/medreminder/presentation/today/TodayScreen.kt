@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Person
@@ -23,6 +22,7 @@ import java.util.*
 @Composable
 fun TodayScreen(
     onEditMedication: (Int) -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     viewModel: TodayViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -46,7 +46,7 @@ fun TodayScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Profile */ }) {
+                    IconButton(onClick = onNavigateToProfile) {
                         Icon(Icons.Outlined.Person, contentDescription = "Profile")
                     }
                     IconButton(onClick = { viewModel.onResetTodayRequested() }) {
@@ -54,13 +54,6 @@ fun TodayScreen(
                     }
                 },
                 scrollBehavior = scrollBehavior
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { /* This usually navigates to Add, but we use Bottom Nav */ },
-                icon = { Icon(Icons.Default.Add, null) },
-                text = { Text("Add Medication") }
             )
         }
     ) { padding ->
