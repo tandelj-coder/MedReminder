@@ -3,6 +3,7 @@ package ca.sheridancollege.medreminder.presentation.add
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.domain.usecase.AddMedicationUseCase
@@ -26,29 +27,44 @@ data class AddMedicationUiState(
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val nameError: String? = null,
-    val daysError: String? = null
+    val daysError: String? = null,
+    val isEditMode: Boolean = false
 )
 
 @HiltViewModel
 class AddMedicationViewModel @Inject constructor(
     private val addMedication: AddMedicationUseCase,
+    private val repository: MedicationRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddMedicationUiState())
     val uiState: StateFlow<AddMedicationUiState> = _uiState.asStateFlow()
+    private var editingId: Int = 0
 
-    fun onNameChange(value: String) =
-        _uiState.update { it.copy(name = value, nameError = null) }
+    fun loadMedication(id: Int) {
+        if (id == 0) return
+        editingId = id
+        viewModelScope.launch {
+            val med = repository.getMedicationById(id) ?: return@launch
+            _uiState.update {
+                it.copy(
+                    name = med.name,
+                    dosage = med.dosage,
+                    timeHour = med.timeHour,
+                    timeMinute = med.timeMinute,
+                    selectedDays = med.days,
+                    notes = med.notes,
+                    isEditMode = true
+                )
+            }
+        }
+    }
 
-    fun onDosageChange(value: String) =
-        _uiState.update { it.copy(dosage = value) }
-
-    fun onTimeChange(hour: Int, minute: Int) =
-        _uiState.update { it.copy(timeHour = hour, timeMinute = minute) }
-
-    fun onNotesChange(value: String) =
-        _uiState.update { it.copy(notes = value) }
+    fun onNameChange(value: String) = _uiState.update { it.copy(name = value, nameError = null) }
+    fun onDosageChange(value: String) = _uiState.update { it.copy(dosage = value) }
+    fun onTimeChange(hour: Int, minute: Int) = _uiState.update { it.copy(timeHour = hour, timeMinute = minute) }
+    fun onNotesChange(value: String) = _uiState.update { it.copy(notes = value) }
 
     fun onDayToggled(day: DayOfWeek) {
         val current = _uiState.value.selectedDays.toMutableList()
@@ -59,7 +75,6 @@ class AddMedicationViewModel @Inject constructor(
     fun onSave() {
         val state = _uiState.value
         var hasError = false
-
         if (state.name.isBlank()) {
             _uiState.update { it.copy(nameError = "Medication name is required") }
             hasError = true
@@ -73,6 +88,7 @@ class AddMedicationViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             val medication = Medication(
+                id = editingId,
                 name = state.name.trim(),
                 dosage = state.dosage.trim(),
                 timeHour = state.timeHour,
@@ -80,15 +96,19 @@ class AddMedicationViewModel @Inject constructor(
                 days = state.selectedDays,
                 notes = state.notes.trim()
             )
-            val id = addMedication(medication)
-            MedicationReminderWorker.schedule(
-                context = context,
-                medicationId = id.toInt(),
-                medicationName = medication.name,
-                dosage = medication.dosage,
-                hour = medication.timeHour,
-                minute = medication.timeMinute
-            )
+            if (state.isEditMode) {
+                repository.updateMedication(medication)
+            } else {
+                val id = addMedication(medication)
+                MedicationReminderWorker.schedule(
+                    context = context,
+                    medicationId = id.toInt(),
+                    medicationName = medication.name,
+                    dosage = medication.dosage,
+                    hour = medication.timeHour,
+                    minute = medication.timeMinute
+                )
+            }
             _uiState.update { it.copy(isSaving = false, isSaved = true) }
         }
     }

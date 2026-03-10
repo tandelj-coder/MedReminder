@@ -2,47 +2,40 @@ package ca.sheridancollege.medreminder.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary — Teal (trust, health, calm)
-val Teal10 = Color(0xFF001F24)
-val Teal20 = Color(0xFF003640)
-val Teal30 = Color(0xFF004E5C)
-val Teal40 = Color(0xFF00687A)
-val Teal80 = Color(0xFF4FD8EB)
-val Teal90 = Color(0xFFA2EEFF)
-val Teal95 = Color(0xFFD0F8FF)
+// Deep navy background (like the travel app splash)
+val NavyDark    = Color(0xFF0A1628)   // deepest background
+val NavyMid     = Color(0xFF0D2447)   // mid navy
+val NavyCard    = Color(0xFF152B55)   // card on dark bg
+val NavyLight   = Color(0xFF1A3A6E)   // lighter navy
 
-// Secondary — Sage Green (wellness, calm)
-val Sage10 = Color(0xFF051F0E)
-val Sage20 = Color(0xFF1A3723)
-val Sage30 = Color(0xFF2F4E38)
-val Sage40 = Color(0xFF46664F)
-val Sage80 = Color(0xFFA8D0AF)
-val Sage90 = Color(0xFFC3ECCA)
-val Sage95 = Color(0xFFE1F5E4)
+// Primary blue
+val Blue40      = Color(0xFF1565C0)
+val Blue50      = Color(0xFF1976D2)
+val Blue80      = Color(0xFF90CAF9)
+val Blue90      = Color(0xFFE3F2FD)
+val Blue10      = Color(0xFF0D1B2A)
 
-// Tertiary — Soft Blue (clean, medical)
-val Blue10 = Color(0xFF001831)
-val Blue20 = Color(0xFF002D4F)
-val Blue30 = Color(0xFF00436F)
-val Blue40 = Color(0xFF005A90)
-val Blue80 = Color(0xFF90CAFF)
-val Blue90 = Color(0xFFD0E4FF)
+// Teal accent (nav bar selected, CTAs)
+val Teal40      = Color(0xFF00BCD4)
+val Teal50      = Color(0xFF26C6DA)
+val Teal80      = Color(0xFF80DEEA)
+val Teal90      = Color(0xFFE0F7FA)
+val Teal10      = Color(0xFF003A42)
+
+// Light surfaces (for light mode)
+val White       = Color(0xFFFFFFFF)
+val OffWhite    = Color(0xFFF5F7FA)
+val LightCard   = Color(0xFFFFFFFF)
 
 // Error
-val Red10 = Color(0xFF410002)
-val Red20 = Color(0xFF690005)
-val Red40 = Color(0xFFBA1A1A)
-val Red80 = Color(0xFFFFB4AB)
-val Red90 = Color(0xFFFFDAD6)
+val Red40       = Color(0xFFE53935)
+val Red80       = Color(0xFFEF9A9A)
+val Red90       = Color(0xFFFFEBEE)
+val Red10       = Color(0xFF3B0007)
+val Red20       = Color(0xFF680013)
 
-// Neutral
-val Grey10 = Color(0xFF191C1D)
-val Grey20 = Color(0xFF2D3132)
-val Grey90 = Color(0xFFE0E3E4)
-val Grey95 = Color(0xFFEFF1F2)
-val Grey99 = Color(0xFFF5FAFB)
-
-// Success green (for taken state)
-val Green40 = Color(0xFF2E7D32)
-val Green80 = Color(0xFFA5D6A7)
-val Green90 = Color(0xFFC8E6C9)
+// Text
+val TextDark    = Color(0xFF0A1628)
+val TextMid     = Color(0xFF4A5568)
+val TextLight   = Color(0xFFE2E8F0)
+val TextMuted   = Color(0xFF94A3B8)

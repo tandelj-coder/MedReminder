@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ca.sheridancollege.medreminder.domain.model.AdherenceStats
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.usecase.DeleteMedicationUseCase
 import ca.sheridancollege.medreminder.domain.usecase.GetAdherenceStatsUseCase
 import ca.sheridancollege.medreminder.domain.usecase.GetTodayMedicationsUseCase
 import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenResult
 import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenUseCase
+import ca.sheridancollege.medreminder.domain.usecase.ResetDailyStatusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -18,7 +20,8 @@ data class TodayUiState(
     val adherenceStats: AdherenceStats = AdherenceStats(0, 0, 0),
     val isLoading: Boolean = true,
     val doubleDoseWarning: DoubleDoseWarningState? = null,
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val showResetConfirm: Boolean = false
 )
 
 data class DoubleDoseWarningState(
@@ -31,7 +34,9 @@ data class DoubleDoseWarningState(
 class TodayViewModel @Inject constructor(
     private val getTodayMedications: GetTodayMedicationsUseCase,
     private val markAsTaken: MarkAsTakenUseCase,
-    private val getAdherenceStats: GetAdherenceStatsUseCase
+    private val getAdherenceStats: GetAdherenceStatsUseCase,
+    private val deleteMedication: DeleteMedicationUseCase,
+    private val resetDailyStatus: ResetDailyStatusUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TodayUiState())
@@ -84,12 +89,37 @@ class TodayViewModel @Inject constructor(
                     }
                 }
                 is MarkAsTakenResult.AlreadyTaken -> {
-                    _uiState.update {
-                        it.copy(snackbarMessage = "Already taken today")
-                    }
+                    _uiState.update { it.copy(snackbarMessage = "Already taken today") }
                 }
             }
         }
+    }
+
+    fun onDeleteMedication(medication: Medication) {
+        viewModelScope.launch {
+            deleteMedication(medication)
+            _uiState.update { it.copy(snackbarMessage = "${medication.name} removed") }
+        }
+    }
+
+    fun onResetTodayRequested() {
+        _uiState.update { it.copy(showResetConfirm = true) }
+    }
+
+    fun onResetTodayConfirmed() {
+        viewModelScope.launch {
+            resetDailyStatus()
+            _uiState.update {
+                it.copy(
+                    showResetConfirm = false,
+                    snackbarMessage = "Today's status reset"
+                )
+            }
+        }
+    }
+
+    fun onResetTodayDismissed() {
+        _uiState.update { it.copy(showResetConfirm = false) }
     }
 
     fun onDismissDoubleDoseWarning() {

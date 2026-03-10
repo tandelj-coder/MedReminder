@@ -26,41 +26,42 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Add : Screen("add", "Add", Icons.Default.Add)
     object History : Screen("history", "History", Icons.Default.DateRange)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    object Edit : Screen("edit/{medicationId}", "Edit", Icons.Default.Add)
 }
 
-val bottomNavItems = listOf(
-    Screen.Today,
-    Screen.Add,
-    Screen.History,
-    Screen.Settings
-)
+val bottomNavItems = listOf(Screen.Today, Screen.Add, Screen.History, Screen.Settings)
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val showBottomBar = bottomNavItems.any {
+        currentDestination?.hierarchy?.any { d -> d.route == it.route } == true
+    }
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                bottomNavItems.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.label) },
-                        label = { Text(screen.label) },
-                        selected = currentDestination?.hierarchy?.any {
-                            it.route == screen.route
-                        } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+            if (showBottomBar) {
+                NavigationBar {
+                    bottomNavItems.forEach { screen ->
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = screen.label) },
+                            label = { Text(screen.label) },
+                            selected = currentDestination?.hierarchy?.any {
+                                it.route == screen.route
+                            } == true,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -70,11 +71,20 @@ fun AppNavigation() {
             startDestination = Screen.Today.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Today.route) { TodayScreen() }
-            composable(Screen.Add.route) {
-                AddMedicationScreen(onNavigateBack = {
-                    navController.popBackStack()
+            composable(Screen.Today.route) {
+                TodayScreen(onEditMedication = { id ->
+                    navController.navigate("edit/$id")
                 })
+            }
+            composable(Screen.Add.route) {
+                AddMedicationScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable("edit/{medicationId}") { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("medicationId")?.toIntOrNull() ?: 0
+                AddMedicationScreen(
+                    medicationId = id,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }

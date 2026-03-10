@@ -19,10 +19,15 @@ import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddMedicationScreen(
+    medicationId: Int = 0,
     onNavigateBack: () -> Unit,
     viewModel: AddMedicationViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(medicationId) {
+        if (medicationId != 0) viewModel.loadMedication(medicationId)
+    }
     var showTimePicker by remember { mutableStateOf(false) }
     val timePickerState = rememberTimePickerState(
         initialHour = uiState.timeHour,
@@ -55,7 +60,7 @@ fun AddMedicationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Medication") },
+                title = { Text(if (uiState.isEditMode) "Edit Medication" else "Add Medication") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -178,7 +183,7 @@ fun AddMedicationScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Save Medication", fontWeight = FontWeight.SemiBold)
+                    Text(if (uiState.isEditMode) "Update Medication" else "Save Medication", fontWeight = FontWeight.SemiBold)
                 }
             }
             Spacer(Modifier.height(16.dp))
