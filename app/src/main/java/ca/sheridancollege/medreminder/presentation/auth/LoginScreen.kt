@@ -46,6 +46,7 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // Google Sign-In options
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestIdToken(context.getString(R.string.default_web_client_id))
         .requestEmail()
@@ -67,7 +68,7 @@ fun LoginScreen(
     }
 
     LaunchedEffect(state.user) {
-        if (state.user != null) {
+        if (state.user != null && state.user!!.isProfileComplete) {
             onLoginSuccess()
         }
     }
@@ -177,7 +178,12 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 OutlinedButton(
-                    onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                    onClick = { 
+                        // Force account picker by signing out of Google first
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            launcher.launch(googleSignInClient.signInIntent)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
