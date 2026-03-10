@@ -22,7 +22,7 @@ val TextGray = Color(0xFF949498)
 val GlassWhite = Color(0x1AFFFFFF)
 val GlassBorder = Color(0x33FFFFFF)
 
-// Material 3 Expressive Mappings
+// --- Material 3 Expressive Mappings (Dark) ---
 val PrimaryDark = F1Red
 val OnPrimaryDark = Color.White
 val PrimaryContainerDark = Color(0xFF410002)
@@ -42,6 +42,22 @@ val SurfaceDark = PaddockDarkGray
 val OnSurfaceDark = Color.White
 val BackgroundDark = PaddockBlack
 val OnBackgroundDark = Color.White
+
+// --- Material 3 Expressive Mappings (Light) ---
+val PrimaryLight = F1Red
+val OnPrimaryLight = Color.White
+val PrimaryContainerLight = Color(0xFFFFDAD6)
+val OnPrimaryContainerLight = Color(0xFF410002)
+
+val SecondaryLight = F1Teal
+val OnSecondaryLight = Color.Black
+val SecondaryContainerLight = Color(0xFF70F7E7)
+val OnSecondaryContainerLight = Color(0xFF00201C)
+
+val BackgroundLight = Color(0xFFF1F2F3)
+val OnBackgroundLight = PaddockBlack
+val SurfaceLight = Color.White
+val OnSurfaceLight = PaddockBlack
 
 // Compatibility Aliases (to prevent unresolved references)
 val DeepPaddock = PaddockBlack
