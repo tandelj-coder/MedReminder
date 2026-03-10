@@ -3,6 +3,7 @@ package ca.sheridancollege.medreminder.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ca.sheridancollege.medreminder.data.repository.AuthRepository
+import ca.sheridancollege.medreminder.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,6 +65,37 @@ class AuthViewModel @Inject constructor(
             authRepository.signInWithEmail(email, password)
                 .onSuccess { user ->
                     _state.update { it.copy(user = user, isLoading = false) }
+                }
+                .onFailure { e ->
+                    _state.update { it.copy(error = e.message, isLoading = false) }
+                }
+        }
+    }
+
+    fun updateProfile(
+        name: String,
+        phone: String,
+        height: String,
+        weight: String,
+        illness: String,
+        photoUrl: String? = null
+    ) {
+        val currentUser = _state.value.user ?: return
+        val updatedUser = currentUser.copy(
+            displayName = name,
+            phoneNumber = phone,
+            height = height,
+            weight = weight,
+            illness = illness,
+            photoUrl = photoUrl ?: currentUser.photoUrl,
+            isProfileComplete = true
+        )
+
+        _state.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            authRepository.updateProfile(updatedUser)
+                .onSuccess {
+                    _state.update { it.copy(user = updatedUser, isLoading = false) }
                 }
                 .onFailure { e ->
                     _state.update { it.copy(error = e.message, isLoading = false) }

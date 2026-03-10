@@ -19,17 +19,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ca.sheridancollege.medreminder.presentation.add.AddMedicationScreen
 import ca.sheridancollege.medreminder.presentation.auth.AuthViewModel
+import ca.sheridancollege.medreminder.presentation.auth.CompleteProfileScreen
 import ca.sheridancollege.medreminder.presentation.auth.LoginScreen
 import ca.sheridancollege.medreminder.presentation.history.HistoryScreen
+import ca.sheridancollege.medreminder.presentation.settings.ProfileDetailScreen
 import ca.sheridancollege.medreminder.presentation.settings.SettingsScreen
 import ca.sheridancollege.medreminder.presentation.today.TodayScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Login : Screen("login", "Login", Icons.Default.Home)
+    object CompleteProfile : Screen("complete_profile", "Setup", Icons.Default.Home)
     object Today : Screen("today", "Today", Icons.Default.Home)
     object Add : Screen("add", "Add", Icons.Default.Add)
     object History : Screen("history", "History", Icons.Default.DateRange)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    object ProfileDetail : Screen("profile_detail", "Profile", Icons.Default.Settings)
     object Edit : Screen("edit/{medicationId}", "Edit", Icons.Default.Add)
 }
 
@@ -45,8 +49,9 @@ fun AppNavigation(
     
     val authState by authViewModel.state.collectAsState()
     val isLoggedIn = authState.user != null
+    val isProfileComplete = authState.user?.isProfileComplete ?: false
 
-    val showBottomBar = isLoggedIn && bottomNavItems.any {
+    val showBottomBar = isLoggedIn && isProfileComplete && bottomNavItems.any {
         currentDestination?.hierarchy?.any { d -> d.route == it.route } == true
     }
 
@@ -78,15 +83,26 @@ fun AppNavigation(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = if (isLoggedIn) Screen.Today.route else Screen.Login.route,
+            startDestination = if (!isLoggedIn) Screen.Login.route 
+                              else if (!isProfileComplete) Screen.CompleteProfile.route 
+                              else Screen.Today.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Login.route) {
                 LoginScreen(
                     viewModel = authViewModel,
                     onLoginSuccess = {
+                        // Navigation is handled by startDestination logic in NavHost init mostly,
+                        // but explicit navigation helps for instantaneous feedback.
+                    }
+                )
+            }
+            composable(Screen.CompleteProfile.route) {
+                CompleteProfileScreen(
+                    viewModel = authViewModel,
+                    onComplete = {
                         navController.navigate(Screen.Today.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
+                            popUpTo(Screen.CompleteProfile.route) { inclusive = true }
                         }
                     }
                 )
@@ -97,13 +113,7 @@ fun AppNavigation(
                         navController.navigate("edit/$id")
                     },
                     onNavigateToProfile = {
-                        navController.navigate(Screen.Settings.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        navController.navigate(Screen.ProfileDetail.route)
                     }
                 )
             }
@@ -119,6 +129,11 @@ fun AppNavigation(
             }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.ProfileDetail.route) {
+                ProfileDetailScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

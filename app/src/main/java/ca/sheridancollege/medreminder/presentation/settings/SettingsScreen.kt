@@ -1,5 +1,6 @@
 package ca.sheridancollege.medreminder.presentation.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +25,7 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigateToProfile: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
@@ -52,6 +54,7 @@ fun SettingsScreen(
             // Profile Section
             authState.user?.let { user ->
                 ListItem(
+                    modifier = Modifier.clickable { onNavigateToProfile() },
                     headlineContent = { Text(user.displayName ?: "User", fontWeight = FontWeight.Bold) },
                     supportingContent = { Text(user.email ?: "") },
                     leadingContent = {
