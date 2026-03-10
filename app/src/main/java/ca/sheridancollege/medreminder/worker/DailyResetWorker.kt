@@ -1,10 +1,10 @@
 package ca.sheridancollege.medreminder.worker
 
+import UserPreferencesDataStore
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
-import ca.sheridancollege.medreminder.datastore.UserPreferencesDataStore
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -44,7 +44,7 @@ class DailyResetWorker @AssistedInject constructor(
         return try {
             repository.resetAllDailyStatus()
             Result.success()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Result.retry()
         }
     }

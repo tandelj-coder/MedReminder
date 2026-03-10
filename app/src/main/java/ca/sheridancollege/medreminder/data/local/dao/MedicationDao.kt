@@ -1,0 +1,39 @@
+package ca.sheridancollege.medreminder.data.local.dao
+
+import androidx.room.*
+import ca.sheridancollege.medreminder.data.local.entity.MedicationEntity
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface MedicationDao {
+
+    @Query("SELECT * FROM medications WHERE isActive = 1 ORDER BY timeHour, timeMinute")
+    fun getAllActiveMedications(): Flow<List<MedicationEntity>>
+
+    @Query("SELECT * FROM medications WHERE id = :id")
+    suspend fun getMedicationById(id: Int): MedicationEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(medication: MedicationEntity): Long
+
+    @Update
+    suspend fun update(medication: MedicationEntity)
+
+    @Delete
+    suspend fun delete(medication: MedicationEntity)
+
+    @Query("UPDATE medications SET isTakenToday = 1, takenTimestamp = :timestamp WHERE id = :id")
+    suspend fun markAsTaken(id: Int, timestamp: Long)
+
+    @Query("UPDATE medications SET isTakenToday = 0, takenTimestamp = NULL")
+    suspend fun resetAllDailyStatus()
+
+    @Query("SELECT * FROM medications WHERE isActive = 1 AND days LIKE '%' || :dayCode || '%' ORDER BY timeHour, timeMinute")
+    fun getMedicationsForDay(dayCode: String): Flow<List<MedicationEntity>>
+
+    @Query("SELECT COUNT(*) FROM medications WHERE isActive = 1 AND isTakenToday = 1")
+    fun getTakenCountToday(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM medications WHERE isActive = 1")
+    fun getTotalActiveCount(): Flow<Int>
+}

@@ -1,7 +1,7 @@
 package ca.sheridancollege.medreminder.domain.usecase
 
+import UserPreferencesDataStore
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
-import ca.sheridancollege.medreminder.datastore.UserPreferencesDataStore
 import ca.sheridancollege.medreminder.domain.model.AdherenceStats
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -16,7 +16,7 @@ class GetAdherenceStatsUseCase @Inject constructor(
             repository.getTakenCountToday(),
             repository.getTotalActiveCount(),
             dataStore.streakCount
-        ) { taken, total, streak ->
+        ) { taken: Int, total: Int, streak: Int ->
             AdherenceStats(
                 totalScheduled = total,
                 totalTaken = taken,

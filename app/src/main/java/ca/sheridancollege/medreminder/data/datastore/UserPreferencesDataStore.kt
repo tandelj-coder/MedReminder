@@ -1,5 +1,3 @@
-package ca.sheridancollege.medreminder.datastore
-
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
@@ -22,6 +20,7 @@ class UserPreferencesDataStore @Inject constructor(
         val SNOOZE_MINUTES = intPreferencesKey("snooze_minutes")
         val RESET_HOUR = intPreferencesKey("reset_hour")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
+        val STREAK_COUNT = intPreferencesKey("streak_count")
     }
 
     val notificationsEnabled: Flow<Boolean> = context.dataStore.data
@@ -40,6 +39,10 @@ class UserPreferencesDataStore @Inject constructor(
         .catch { emit(emptyPreferences()) }
         .map { it[DARK_THEME] ?: false }
 
+    val streakCount: Flow<Int> = context.dataStore.data
+        .catch { emit(emptyPreferences()) }
+        .map { it[STREAK_COUNT] ?: 0 }
+
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[NOTIFICATIONS_ENABLED] = enabled }
     }
@@ -54,5 +57,13 @@ class UserPreferencesDataStore @Inject constructor(
 
     suspend fun setDarkTheme(enabled: Boolean) {
         context.dataStore.edit { it[DARK_THEME] = enabled }
+    }
+
+    suspend fun incrementStreak() {
+        context.dataStore.edit { it[STREAK_COUNT] = (it[STREAK_COUNT] ?: 0) + 1 }
+    }
+
+    suspend fun resetStreak() {
+        context.dataStore.edit { it[STREAK_COUNT] = 0 }
     }
 }
