@@ -2,24 +2,23 @@ package ca.sheridancollege.medreminder.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Minimalist Palette - Light Mode
-val PureWhite = Color(0xFFFFFFFF)
-val SoftGray = Color(0xFFF8F9FA)
-val BorderGray = Color(0xFFE9ECEF)
-val TextPrimary = Color(0xFF212529)
-val TextSecondary = Color(0xFF6C757D)
+// Aesthetic "Midnight Glass" Palette
+val MidnightBlue = Color(0xFF0F172A)
+val ElectricViolet = Color(0xFF7C3AED)
+val CyberTeal = Color(0xFF2DD4BF)
+val SoftLavender = Color(0xFFC4B5FD)
 
-// Minimalist Palette - Dark Mode
-val DeepBlack = Color(0xFF121212)
-val DarkGray = Color(0xFF1E1E1E)
-val DarkBorder = Color(0xFF2C2C2C)
-val DarkTextPrimary = Color(0xFFE9ECEF)
-val DarkTextSecondary = Color(0xFFADB5BD)
+val GlassWhite = Color(0x1AFFFFFF)
+val GlassBorder = Color(0x33FFFFFF)
 
-// Accent Color (A clean, modern Teal)
-val AccentPrimary = Color(0xFF00ADB5)
-val AccentSecondary = Color(0xFF393E46)
+val DeepPurple = Color(0xFF1E1B4B)
+val LightSurface = Color(0xFFF8FAFC)
 
-// Functional Colors
-val ErrorRed = Color(0xFFE63946)
-val SuccessGreen = Color(0xFF2A9D8F)
+// Gradient Sets
+val PrimaryGradient = listOf(ElectricViolet, CyberTeal)
+val SurfaceGradient = listOf(MidnightBlue, DeepPurple)
+
+// Functional
+val WarningOrange = Color(0xFFFB923C)
+val ErrorRose = Color(0xFFFB7185)
+val SuccessEmerald = Color(0xFF34D399)

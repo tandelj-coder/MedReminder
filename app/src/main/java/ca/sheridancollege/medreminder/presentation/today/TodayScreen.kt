@@ -2,34 +2,33 @@ package ca.sheridancollege.medreminder.presentation.today
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.roundToInt
 
 @Composable
 fun TodayScreen(
@@ -37,281 +36,203 @@ fun TodayScreen(
     viewModel: TodayViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.snackbarMessage) {
-        uiState.snackbarMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.onSnackbarDismissed()
-        }
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(SurfaceGradient))
+    ) {
+        // Aesthetic Blurred Background Elements
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp)
-        ) {
-            Spacer(Modifier.height(32.dp))
+                .size(300.dp)
+                .offset(x = (-100).dp, y = (-50).dp)
+                .blur(100.dp)
+                .clip(CircleShape)
+                .background(ElectricViolet.copy(alpha = 0.2f))
+        )
 
-            // Minimalist Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentColor = Color.White
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 24.dp)
             ) {
-                Column {
-                    Text(
-                        SimpleDateFormat("MMMM d", Locale.getDefault()).format(Date()).uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        letterSpacing = 2.sp
-                    )
-                    Text(
-                        "Overview",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Light,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-                if (uiState.medications.any { it.isTakenToday }) {
-                    IconButton(onClick = { viewModel.onResetTodayRequested() }) {
+                Spacer(Modifier.height(40.dp))
+
+                // Aesthetic Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date()),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = CyberTeal,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            "My Meds",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                    }
+                    
+                    Surface(
+                        onClick = { viewModel.onResetTodayRequested() },
+                        shape = CircleShape,
+                        color = GlassWhite,
+                        border = BorderStroke(1.dp, GlassBorder)
+                    ) {
                         Icon(
                             Icons.Outlined.RestartAlt,
                             contentDescription = "Reset",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            modifier = Modifier.padding(12.dp).size(20.dp),
+                            tint = Color.White
                         )
                     }
                 }
-            }
 
-            Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(32.dp))
 
-            // Simple Stats Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatItem(label = "Done", value = "${uiState.adherenceStats.totalTaken}/${uiState.adherenceStats.totalScheduled}")
-                VerticalDivider(modifier = Modifier.height(24.dp), color = MaterialTheme.colorScheme.surfaceVariant)
-                StatItem(label = "Streak", value = "${uiState.adherenceStats.currentStreak}d")
-            }
-
-            // Next Dose Timer (Minimal)
-            uiState.nextDoseInfo?.let { info ->
-                Spacer(Modifier.height(16.dp))
-                NextDoseCountdown(info = info)
-            }
-
-            Spacer(Modifier.height(32.dp))
-
-            if (uiState.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(strokeWidth = 2.dp)
+                // Glassmorphism Stats Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = GlassWhite,
+                    border = BorderStroke(1.dp, GlassBorder)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StatColumn("Taken", "${uiState.adherenceStats.totalTaken}/${uiState.adherenceStats.totalScheduled}")
+                        VerticalDivider(modifier = Modifier.height(30.dp), thickness = 1.dp, color = GlassBorder)
+                        StatColumn("Streak", "🔥 ${uiState.adherenceStats.currentStreak}")
+                        VerticalDivider(modifier = Modifier.height(30.dp), thickness = 1.dp, color = GlassBorder)
+                        StatColumn("Goal", "100%")
+                    }
                 }
-            } else if (uiState.medications.isEmpty()) {
-                EmptyState()
-            } else {
-                val pending = uiState.medications.filter { !it.isTakenToday }
-                val taken = uiState.medications.filter { it.isTakenToday }
+
+                uiState.nextDoseInfo?.let {
+                    Spacer(Modifier.height(24.dp))
+                    AestheticTimer(it)
+                }
+
+                Spacer(Modifier.height(32.dp))
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
+                    val pending = uiState.medications.filter { !it.isTakenToday }
+                    val taken = uiState.medications.filter { it.isTakenToday }
+
                     if (pending.isNotEmpty()) {
-                        item { SectionLabel("UPCOMING") }
-                        items(pending, key = { it.id }) { med ->
-                            MinimalMedicationCard(
-                                medication = med,
-                                onSwipeConfirm = { viewModel.onMarkAsTaken(med) },
-                                onDelete = { viewModel.onDeleteMedication(med) },
-                                onEdit = { onEditMedication(med.id) }
-                            )
+                        item { Text("UPCOMING", style = MaterialTheme.typography.labelLarge, color = SoftLavender) }
+                        items(pending) { med ->
+                            AestheticMedCard(med, onMark = { viewModel.onMarkAsTaken(med) }, onEdit = { onEditMedication(med.id) })
                         }
                     }
+
                     if (taken.isNotEmpty()) {
-                        item { Spacer(Modifier.height(8.dp)); SectionLabel("COMPLETED") }
-                        items(taken, key = { it.id }) { med ->
-                            MinimalMedicationCard(
-                                medication = med,
-                                onSwipeConfirm = { viewModel.onMarkAsTaken(med) },
-                                onDelete = { viewModel.onDeleteMedication(med) },
-                                onEdit = { onEditMedication(med.id) }
-                            )
+                        item { Spacer(Modifier.height(8.dp)); Text("COMPLETED", style = MaterialTheme.typography.labelLarge, color = CyberTeal) }
+                        items(taken) { med ->
+                            AestheticMedCard(med, onMark = {}, onEdit = { onEditMedication(med.id) })
                         }
                     }
                 }
             }
         }
     }
-
-    // Dialogs remain simple
-    if (uiState.showResetConfirm) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onResetTodayDismissed() },
-            title = { Text("Reset Progress", fontWeight = FontWeight.Light) },
-            text = { Text("Clear today's logs?") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.onResetTodayConfirmed() }) { Text("RESET") }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.onResetTodayDismissed() }) { Text("CANCEL") }
-            },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    }
 }
 
 @Composable
-fun StatItem(label: String, value: String) {
+fun StatColumn(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = SoftLavender)
     }
 }
 
 @Composable
-fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        letterSpacing = 1.sp,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-}
-
-@Composable
-fun NextDoseCountdown(info: NextDoseInfo) {
+fun AestheticTimer(info: NextDoseInfo) {
     val totalSeconds = (info.remainingTimeMillis / 1000).coerceAtLeast(0)
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
-    
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
-            .padding(16.dp)
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White.copy(alpha = 0.05f),
+        border = BorderStroke(1.dp, CyberTeal.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text("NEXT DOSE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Text(info.medicationName, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(CyberTeal))
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text("NEXT DOSE", style = MaterialTheme.typography.labelSmall, color = CyberTeal)
+                    Text(info.medicationName, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                }
             }
             Text(
                 String.format("%02d:%02d", minutes, seconds),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Light,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
             )
         }
     }
 }
 
 @Composable
-fun MinimalMedicationCard(
-    medication: Medication,
-    onSwipeConfirm: () -> Unit,
-    onDelete: () -> Unit,
-    onEdit: () -> Unit
-) {
-    var offsetX by remember { mutableFloatStateOf(0f) }
-    val animatedOffset by animateFloatAsState(targetValue = offsetX)
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-            .border(
-                1.dp,
-                if (medication.isTakenToday) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(16.dp)
-            )
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (medication.isTakenToday) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface)
-            .clickable { onEdit() }
-            .pointerInput(medication.isTakenToday) {
-                detectHorizontalDragGestures(
-                    onDragEnd = {
-                        if (offsetX > 200f && !medication.isTakenToday) onSwipeConfirm()
-                        else if (offsetX < -200f) onDelete()
-                        offsetX = 0f
-                    },
-                    onHorizontalDrag = { _, dragAmount ->
-                        offsetX = (offsetX + dragAmount).coerceIn(-250f, 250f)
-                    }
-                )
-            }
+fun AestheticMedCard(med: Medication, onMark: () -> Unit, onEdit: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable { onEdit() },
+        shape = RoundedCornerShape(20.dp),
+        color = if (med.isTakenToday) GlassWhite.copy(alpha = 0.05f) else GlassWhite,
+        border = BorderStroke(1.dp, if (med.isTakenToday) Color.Transparent else GlassBorder)
     ) {
-        // Swipe Backgrounds (Minimalist)
-        if (offsetX > 0) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF2A9D8F).copy(alpha = 0.1f)).padding(start = 24.dp), contentAlignment = Alignment.CenterStart) {
-                Icon(Icons.Default.Check, null, tint = Color(0xFF2A9D8F))
-            }
-        } else if (offsetX < 0) {
-            Box(Modifier.fillMaxSize().background(Color(0xFFE63946).copy(alpha = 0.1f)).padding(end = 24.dp), contentAlignment = Alignment.CenterEnd) {
-                Icon(Icons.Default.DeleteOutline, null, tint = Color(0xFFE63946))
-            }
-        }
-
-        // Foreground
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .offset { IntOffset(animatedOffset.roundToInt(), 0) }
-                .background(if (medication.isTakenToday) Color.Transparent else MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                medication.formattedTime().split(" ")[0],
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Light,
-                color = if (medication.isTakenToday) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.width(20.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    medication.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (medication.isTakenToday) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    medication.dosage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Box(
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(med.formattedTime().split(" ")[0], color = Color.White, fontWeight = FontWeight.Bold)
             }
-            if (medication.isTakenToday) {
-                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF2A9D8F), modifier = Modifier.size(20.dp))
+            
+            Spacer(Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(med.name, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(med.dosage, style = MaterialTheme.typography.labelMedium, color = SoftLavender)
+            }
+
+            if (!med.isTakenToday) {
+                IconButton(onClick = onMark) {
+                    Icon(Icons.Outlined.CheckCircle, null, tint = CyberTeal)
+                }
+            } else {
+                Icon(Icons.Outlined.TaskAlt, null, tint = CyberTeal.copy(alpha = 0.5f))
             }
         }
-    }
-}
-
-@Composable
-fun EmptyState() {
-    Box(Modifier.fillMaxSize().padding(bottom = 100.dp), contentAlignment = Alignment.Center) {
-        Text(
-            "Nothing scheduled.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Light
-        )
     }
 }
