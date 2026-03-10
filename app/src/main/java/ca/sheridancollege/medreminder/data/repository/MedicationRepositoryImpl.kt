@@ -16,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class MedicationRepositoryImpl @Inject constructor(
     private val medicationDao: MedicationDao,
-    private val intakeLogDao: IntakeLogDao
+    private val intakeLogDao: IntakeLogDao,
+    private val firestoreSyncRepository: FirestoreSyncRepository
 ) : MedicationRepository {
 
     // ─── Medications ────────────────────────────────────────────────
@@ -40,15 +41,22 @@ class MedicationRepositoryImpl @Inject constructor(
     override suspend fun getMedicationById(id: Int): Medication? =
         medicationDao.getMedicationById(id)?.toDomain()
 
-    override suspend fun insertMedication(medication: Medication): Long =
-        medicationDao.insert(medication.toEntity())
+    override suspend fun insertMedication(medication: Medication): Long {
+        val id = medicationDao.insert(medication.toEntity())
+        val updatedMedication = medication.copy(id = id.toInt())
+        firestoreSyncRepository.uploadMedication(updatedMedication)
+        return id
+    }
 
-    override suspend fun updateMedication(medication: Medication) =
+    override suspend fun updateMedication(medication: Medication) {
         medicationDao.update(medication.toEntity())
+        firestoreSyncRepository.uploadMedication(medication)
+    }
 
     override suspend fun deleteMedication(medication: Medication) {
         medicationDao.delete(medication.toEntity())
         intakeLogDao.deleteLogsForMedication(medication.id)
+        firestoreSyncRepository.deleteMedication(medication.id)
     }
 
     override suspend fun markAsTaken(
@@ -78,6 +86,11 @@ class MedicationRepositoryImpl @Inject constructor(
                 wasOnTime = wasOnTime
             )
         )
+        
+        // Also sync the updated medication status to Firestore
+        medicationDao.getMedicationById(medicationId)?.let {
+            firestoreSyncRepository.uploadMedication(it.toDomain())
+        }
     }
 
     override suspend fun resetAllDailyStatus() =

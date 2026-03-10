@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -86,13 +87,21 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.android)
 
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.play.services.auth)
+
+    // Coil (Image Loading)
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.arch.core.testing)
     testImplementation(libs.turbine)
-    testImplementation(libs.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.room.testing)

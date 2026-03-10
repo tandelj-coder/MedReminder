@@ -1,5 +1,7 @@
 package ca.sheridancollege.medreminder.di
 
+import ca.sheridancollege.medreminder.data.repository.AuthRepository
+import ca.sheridancollege.medreminder.data.repository.AuthRepositoryImpl
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.data.repository.MedicationRepositoryImpl
 import dagger.Binds
@@ -17,4 +19,10 @@ abstract class RepositoryModule {
     abstract fun bindMedicationRepository(
         impl: MedicationRepositoryImpl
     ): MedicationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        impl: AuthRepositoryImpl
+    ): AuthRepository
 }

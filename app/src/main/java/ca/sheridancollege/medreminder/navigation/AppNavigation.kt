@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -17,11 +18,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ca.sheridancollege.medreminder.presentation.add.AddMedicationScreen
+import ca.sheridancollege.medreminder.presentation.auth.AuthViewModel
+import ca.sheridancollege.medreminder.presentation.auth.LoginScreen
 import ca.sheridancollege.medreminder.presentation.history.HistoryScreen
 import ca.sheridancollege.medreminder.presentation.settings.SettingsScreen
 import ca.sheridancollege.medreminder.presentation.today.TodayScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
+    object Login : Screen("login", "Login", Icons.Default.Home)
     object Today : Screen("today", "Today", Icons.Default.Home)
     object Add : Screen("add", "Add", Icons.Default.Add)
     object History : Screen("history", "History", Icons.Default.DateRange)
@@ -32,11 +36,17 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 val bottomNavItems = listOf(Screen.Today, Screen.Add, Screen.History, Screen.Settings)
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val showBottomBar = bottomNavItems.any {
+    
+    val authState by authViewModel.state.collectAsState()
+    val isLoggedIn = authState.user != null
+
+    val showBottomBar = isLoggedIn && bottomNavItems.any {
         currentDestination?.hierarchy?.any { d -> d.route == it.route } == true
     }
 
@@ -68,9 +78,19 @@ fun AppNavigation() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Today.route,
+            startDestination = if (isLoggedIn) Screen.Today.route else Screen.Login.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    viewModel = authViewModel,
+                    onLoginSuccess = {
+                        navController.navigate(Screen.Today.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Today.route) {
                 TodayScreen(onEditMedication = { id ->
                     navController.navigate("edit/$id")

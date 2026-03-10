@@ -11,14 +11,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import ca.sheridancollege.medreminder.presentation.auth.AuthViewModel
+import coil.compose.AsyncImage
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
+    val authState by authViewModel.state.collectAsState()
 
     // Reset done snackbar
     if (uiState.resetDone) {
@@ -36,6 +44,72 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         Spacer(Modifier.height(16.dp))
         Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(20.dp))
+
+        // Profile Section
+        authState.user?.let { user ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (user.photoUrl != null) {
+                        Surface(
+                            modifier = Modifier.size(60.dp),
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ) {
+                            AsyncImage(
+                                model = user.photoUrl,
+                                contentDescription = "Profile Picture",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    } else {
+                        Surface(
+                            modifier = Modifier.size(60.dp),
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                modifier = Modifier.padding(12.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                    
+                    Spacer(Modifier.width(16.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            user.displayName ?: "User",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            user.email ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    IconButton(onClick = { authViewModel.signOut() }) {
+                        Icon(
+                            Icons.Default.Logout,
+                            contentDescription = "Logout",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+        }
 
         // Streak card
         Card(
