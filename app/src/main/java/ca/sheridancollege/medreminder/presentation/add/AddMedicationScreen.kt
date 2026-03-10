@@ -1,10 +1,12 @@
 package ca.sheridancollege.medreminder.presentation.add
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,9 +23,33 @@ fun AddMedicationScreen(
     viewModel: AddMedicationViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showTimePicker by remember { mutableStateOf(false) }
+    val timePickerState = rememberTimePickerState(
+        initialHour = uiState.timeHour,
+        initialMinute = uiState.timeMinute,
+        is24Hour = false
+    )
 
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) onNavigateBack()
+    }
+
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onTimeChange(timePickerState.hour, timePickerState.minute)
+                    showTimePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
     }
 
     Scaffold(
@@ -67,42 +93,48 @@ fun AddMedicationScreen(
                 singleLine = true
             )
 
-            // Time picker
-            Text("Reminder Time", style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = uiState.timeHour.toString(),
-                    onValueChange = {
-                        val h = it.toIntOrNull()?.coerceIn(0, 23) ?: return@OutlinedTextField
-                        viewModel.onTimeChange(h, uiState.timeMinute)
-                    },
-                    label = { Text("Hour (0-23)") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = uiState.timeMinute.toString(),
-                    onValueChange = {
-                        val m = it.toIntOrNull()?.coerceIn(0, 59) ?: return@OutlinedTextField
-                        viewModel.onTimeChange(uiState.timeHour, m)
-                    },
-                    label = { Text("Minute") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-            }
+            // Time picker button
             Text(
-                "Scheduled: ${uiState.timeHour.let { if (it == 0) 12 else if (it > 12) it - 12 else it }}:" +
-                        "${uiState.timeMinute.toString().padStart(2, '0')} " +
-                        "${if (uiState.timeHour < 12) "AM" else "PM"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
+                "Reminder Time",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
             )
+            OutlinedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showTimePicker = true }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    val hour = uiState.timeHour
+                    val minute = uiState.timeMinute
+                    val displayHour = if (hour == 0) 12 else if (hour > 12) hour - 12 else hour
+                    val amPm = if (hour < 12) "AM" else "PM"
+                    Text(
+                        text = "$displayHour:${minute.toString().padStart(2, '0')} $amPm",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = "Select time",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             // Day selector
-            Text("Repeat On *", style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold)
+            Text(
+                "Repeat On *",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -116,8 +148,11 @@ fun AddMedicationScreen(
                 }
             }
             uiState.daysError?.let {
-                Text(it, color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall)
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
             // Notes
@@ -132,7 +167,9 @@ fun AddMedicationScreen(
             // Save button
             Button(
                 onClick = viewModel::onSave,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
                 enabled = !uiState.isSaving
             ) {
                 if (uiState.isSaving) {
