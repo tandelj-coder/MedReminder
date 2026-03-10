@@ -22,53 +22,56 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import ca.sheridancollege.medreminder.domain.model.IntakeLog
+import ca.sheridancollege.medreminder.ui.theme.*
 import java.util.*
 
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp)
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Spacer(Modifier.height(32.dp))
-        
-        // Minimalist Header
-        Column {
+    Scaffold(
+        containerColor = DeepPaddock
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(Modifier.height(32.dp))
+            
             Text(
                 "LOGBOOK",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 2.sp
+                color = TextGray,
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.Bold
             )
             Text(
-                "Activity",
+                "Session History",
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Light,
-                color = MaterialTheme.colorScheme.onBackground
+                fontWeight = FontWeight.Black,
+                color = Color.White
             )
-        }
-        
-        Spacer(Modifier.height(32.dp))
+            
+            Spacer(Modifier.height(32.dp))
 
-        when {
-            uiState.isLoading -> Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator(strokeWidth = 2.dp) }
+            when {
+                uiState.isLoading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = RacingRed, strokeWidth = 3.dp) }
 
-            uiState.logs.isEmpty() -> EmptyHistoryState()
+                uiState.logs.isEmpty() -> EmptyHistoryState()
 
-            else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp)
-                ) {
-                    items(uiState.logs) { log ->
-                        MinimalHistoryCard(log)
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 32.dp)
+                    ) {
+                        items(uiState.logs) { log ->
+                            PaddockHistoryCard(log)
+                        }
                     }
                 }
             }
@@ -77,25 +80,29 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 }
 
 @Composable
-fun MinimalHistoryCard(log: IntakeLog) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-            .padding(16.dp)
+fun PaddockHistoryCard(log: IntakeLog) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = CardDark,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            if (log.wasDoubleDoseAttempt) RacingRed.copy(alpha = 0.5f) else RacingTeal.copy(alpha = 0.3f)
+        )
     ) {
         Row(
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Status Icon (Minimal)
+            // High-Contrast Status Icon
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(
-                        if (log.wasDoubleDoseAttempt) MaterialTheme.colorScheme.error.copy(alpha = 0.05f)
-                        else Color(0xFF2A9D8F).copy(alpha = 0.05f)
+                        if (log.wasDoubleDoseAttempt) RacingRed.copy(alpha = 0.1f)
+                        else RacingTeal.copy(alpha = 0.1f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -103,22 +110,22 @@ fun MinimalHistoryCard(log: IntakeLog) {
                     imageVector = if (log.wasDoubleDoseAttempt) Icons.Outlined.Warning 
                                  else Icons.Outlined.CheckCircle,
                     contentDescription = null,
-                    tint = if (log.wasDoubleDoseAttempt) MaterialTheme.colorScheme.error 
-                           else Color(0xFF2A9D8F),
-                    modifier = Modifier.size(20.dp)
+                    tint = if (log.wasDoubleDoseAttempt) RacingRed else RacingTeal,
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     log.medicationName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
                 )
                 Text(
                     log.formattedDate(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextGray
                 )
             }
 
@@ -126,12 +133,14 @@ fun MinimalHistoryCard(log: IntakeLog) {
                 Text(
                     log.formattedTime(),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Light
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
                 Text(
                     if (log.wasOnTime) "ON TIME" else "LATE",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (log.wasOnTime) Color(0xFF2A9D8F) else MaterialTheme.colorScheme.error,
+                    color = if (log.wasOnTime) RacingTeal else RacingRed,
+                    fontWeight = FontWeight.Black,
                     letterSpacing = 1.sp
                 )
             }
@@ -142,11 +151,15 @@ fun MinimalHistoryCard(log: IntakeLog) {
 @Composable
 fun EmptyHistoryState() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            "Log is empty.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Light
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Outlined.History, null, tint = TextGray, modifier = Modifier.size(48.dp))
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "No telemetry data.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextGray,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }

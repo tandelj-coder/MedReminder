@@ -1,20 +1,18 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Medical Cross / Plus Sign -->
-    <path
-        android:fillColor="#00BCD4"
-        android:pathData="M34,44 h14 v-14 h12 v14 h14 v12 h-14 v14 h-12 v-14 h-14 z" />
 
-    <!-- Stylized Pill Shape -->
+    <!-- Modern Expressive Medical Cross -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M70,30 A15,15 0 0,0 55,45 L55,65 A15,15 0 0,0 70,80 A15,15 0 0,0 85,65 L85,45 A15,15 0 0,0 70,30 Z" />
+        android:pathData="M54,34c-11,0 -20,9 -20,20s9,20 20,20s20,-9 20,-20S65,34 54,34zM64,57h-7v7h-6v-7h-7v-6h7v-7h6v7h7V57z" />
 
-    <!-- Pill Divider -->
+    <!-- Subtle Inner Glow / Detail -->
     <path
-        android:fillColor="#00BCD4"
-        android:pathData="M55,55 h30 v2 h-30 z" />
+        android:fillColor="#D0BCFF"
+        android:pathData="M54,38c-8.8,0 -16,7.2 -16,16s7.2,16 16,16s16,-7.2 16,-16S62.8,38 54,38zM54,68c-7.7,0 -14,-6.3 -14,-14s6.3,-14 14,-14s14,6.3 14,14S61.7,68 54,68z"
+        android:fillAlpha="0.3" />
 </vector>

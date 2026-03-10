@@ -2,49 +2,57 @@ package ca.sheridancollege.medreminder.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Material 3 Expressive Palette - Vibrant & Dynamic
-val PrimaryLight = Color(0xFF6750A4)
-val OnPrimaryLight = Color(0xFFFFFFFF)
-val PrimaryContainerLight = Color(0xFFEADDFF)
-val OnPrimaryContainerLight = Color(0xFF21005D)
+// --- Master Racing Expressive Palette ---
 
-val SecondaryLight = Color(0xFF625B71)
-val OnSecondaryLight = Color(0xFFFFFFFF)
-val SecondaryContainerLight = Color(0xFFE8DEF8)
-val OnSecondaryContainerLight = Color(0xFF1D192B)
+val PaddockBlack = Color(0xFF000000)
+val PaddockDarkGray = Color(0xFF121212)
+val PaddockLightGray = Color(0xFF1E1E1E)
 
-val TertiaryLight = Color(0xFF7D5260)
-val OnTertiaryLight = Color(0xFFFFFFFF)
-val TertiaryContainerLight = Color(0xFFFFD8E4)
-val OnTertiaryContainerLight = Color(0xFF31111D)
+val F1Red = Color(0xFFE10600)
+val F1Teal = Color(0xFF00D2BE)
+val F1Orange = Color(0xFFFF8700)
+val F1Yellow = Color(0xFFFFF500)
+val F1Blue = Color(0xFF0042BB)
+val F1Purple = Color(0xFF7C3AED)
 
-val ErrorLight = Color(0xFFB3261E)
-val OnErrorLight = Color(0xFFFFFFFF)
-val ErrorContainerLight = Color(0xFFF9DEDC)
-val OnErrorContainerLight = Color(0xFF410E0B)
+val TextWhite = Color(0xFFFFFFFF)
+val TextGray = Color(0xFF949498)
 
-val BackgroundLight = Color(0xFFFEF7FF)
-val OnBackgroundLight = Color(0xFF1D1B20)
-val SurfaceLight = Color(0xFFFEF7FF)
-val OnSurfaceLight = Color(0xFF1D1B20)
+// Semantic Overlays
+val GlassWhite = Color(0x1AFFFFFF)
+val GlassBorder = Color(0x33FFFFFF)
 
-// Dark Mode Expressive
-val PrimaryDark = Color(0xFFD0BCFF)
-val OnPrimaryDark = Color(0xFF381E72)
-val PrimaryContainerDark = Color(0xFF4F378B)
-val OnPrimaryContainerDark = Color(0xFFEADDFF)
+// Material 3 Expressive Mappings
+val PrimaryDark = F1Red
+val OnPrimaryDark = Color.White
+val PrimaryContainerDark = Color(0xFF410002)
+val OnPrimaryContainerDark = Color(0xFFFFDAD6)
 
-val SecondaryDark = Color(0xFFCCC2DC)
-val OnSecondaryDark = Color(0xFF332D41)
-val SecondaryContainerDark = Color(0xFF4A4458)
-val OnSecondaryContainerDark = Color(0xFFE8DEF8)
+val SecondaryDark = F1Teal
+val OnSecondaryDark = Color.Black
+val SecondaryContainerDark = Color(0xFF005048)
+val OnSecondaryContainerDark = Color(0xFF70F7E7)
 
-val BackgroundDark = Color(0xFF141218)
-val OnBackgroundDark = Color(0xFFE6E1E5)
-val SurfaceDark = Color(0xFF141218)
-val OnSurfaceDark = Color(0xFFE6E1E5)
+val TertiaryDark = F1Orange
+val OnTertiaryDark = Color.Black
+val TertiaryContainerDark = Color(0xFF633B00)
+val OnTertiaryContainerDark = Color(0xFFFFDDB3)
 
-// Expressive Accents
-val SuccessExpressive = Color(0xFF4CAF50)
-val WarningExpressive = Color(0xFFFFC107)
-val InfoExpressive = Color(0xFF2196F3)
+val SurfaceDark = PaddockDarkGray
+val OnSurfaceDark = Color.White
+val BackgroundDark = PaddockBlack
+val OnBackgroundDark = Color.White
+
+// Compatibility Aliases (to prevent unresolved references)
+val DeepPaddock = PaddockBlack
+val CardDark = PaddockDarkGray
+val RacingRed = F1Red
+val RacingTeal = F1Teal
+val RacingOrange = F1Orange
+val RacingBlue = F1Blue
+val SoftLavender = Color(0xFFC4B5FD)
+val CyberTeal = F1Teal
+val MidnightBlue = PaddockBlack
+val ErrorRose = F1Red
+val PrimaryGradient = listOf(F1Red, F1Purple)
+val SurfaceGradient = listOf(PaddockBlack, PaddockDarkGray)
