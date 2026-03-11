@@ -33,17 +33,20 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 
 @Composable
-fun LoginScreen(
+fun SignUpScreen(
     viewModel: AuthViewModel,
-    onLoginSuccess: () -> Unit,
-    onNavigateToSignUp: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onSignUpSuccess: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var confirmVisible by remember { mutableStateOf(false) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
 
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestIdToken(context.getString(R.string.default_web_client_id))
@@ -59,13 +62,15 @@ fun LoginScreen(
                 val account = task.getResult(ApiException::class.java)
                 viewModel.onSignInResult(account.idToken)
             } catch (e: ApiException) {
-                Toast.makeText(context, "Login failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Sign up failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    // Navigate to profile setup after sign up
     LaunchedEffect(state.user) {
-        if (state.user != null && state.user!!.isProfileComplete) onLoginSuccess()
+        if (state.user != null && state.user?.isProfileComplete == false) onSignUpSuccess()
+        else if (state.user != null && state.user?.isProfileComplete == true) onSignUpSuccess()
     }
 
     Scaffold { padding ->
@@ -74,7 +79,7 @@ fun LoginScreen(
                 .padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(56.dp))
+            Spacer(Modifier.height(48.dp))
 
             // Header
             Column(horizontalAlignment = Alignment.CenterHorizontally,
@@ -86,9 +91,9 @@ fun LoginScreen(
                         tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Welcome Back", style = MaterialTheme.typography.headlineMedium,
+                Text("Create Account", style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold)
-                Text("Sign in to continue your progress",
+                Text("Sign up to start managing your medications",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center)
@@ -96,16 +101,18 @@ fun LoginScreen(
 
             Spacer(Modifier.height(40.dp))
 
+            // Email
             OutlinedTextField(value = email, onValueChange = { email = it },
-                label = { Text("Email") }, modifier = Modifier.fillMaxWidth(),
+                label = { Text("Email Address") }, modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Outlined.Email, null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true, shape = MaterialTheme.shapes.large)
 
             Spacer(Modifier.height(14.dp))
 
+            // Password
             OutlinedTextField(
-                value = password, onValueChange = { password = it },
+                value = password, onValueChange = { password = it; passwordError = null },
                 label = { Text("Password") }, modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Outlined.Lock, null) },
                 trailingIcon = {
@@ -115,20 +122,54 @@ fun LoginScreen(
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true, shape = MaterialTheme.shapes.large
+                singleLine = true, shape = MaterialTheme.shapes.large,
+                supportingText = { Text("At least 6 characters",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant) }
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(14.dp))
+
+            // Confirm Password
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it; passwordError = null },
+                label = { Text("Confirm Password") }, modifier = Modifier.fillMaxWidth(),
+                leadingIcon = { Icon(Icons.Outlined.Lock, null) },
+                trailingIcon = {
+                    IconButton(onClick = { confirmVisible = !confirmVisible }) {
+                        Icon(if (confirmVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
+                    }
+                },
+                visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true, shape = MaterialTheme.shapes.large,
+                isError = passwordError != null,
+                supportingText = passwordError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } }
+            )
+
+            Spacer(Modifier.height(28.dp))
 
             if (state.isLoading) {
                 CircularProgressIndicator()
             } else {
+                // Sign Up button
                 Button(
-                    onClick = { viewModel.signInWithEmail(email, password) },
+                    onClick = {
+                        when {
+                            email.isBlank() || password.isBlank() ->
+                                passwordError = "Please fill in all fields"
+                            password.length < 6 ->
+                                passwordError = "Password must be at least 6 characters"
+                            password != confirmPassword ->
+                                passwordError = "Passwords do not match"
+                            else -> viewModel.signUpWithEmail(email, password)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = MaterialTheme.shapes.large
                 ) {
-                    Text("Log In", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Create Account", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
 
                 Spacer(Modifier.height(20.dp))
@@ -142,6 +183,7 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(20.dp))
 
+                // Google Sign Up
                 OutlinedButton(
                     onClick = {
                         googleSignInClient.signOut().addOnCompleteListener {
@@ -157,17 +199,19 @@ fun LoginScreen(
                             contentDescription = null, modifier = Modifier.size(22.dp),
                             tint = Color.Unspecified)
                         Spacer(Modifier.width(10.dp))
-                        Text("Continue with Google", fontWeight = FontWeight.SemiBold)
+                        Text("Sign up with Google", fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
 
             Spacer(Modifier.height(28.dp))
 
+            // Already have account
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Don't have an account?", style = MaterialTheme.typography.bodyMedium)
-                TextButton(onClick = { viewModel.clearError(); onNavigateToSignUp() }) {
-                    Text("Sign Up", fontWeight = FontWeight.Bold)
+                Text("Already have an account?",
+                    style = MaterialTheme.typography.bodyMedium)
+                TextButton(onClick = { viewModel.clearError(); onNavigateToLogin() }) {
+                    Text("Log In", fontWeight = FontWeight.Bold)
                 }
             }
 

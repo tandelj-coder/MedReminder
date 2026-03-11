@@ -2,10 +2,7 @@ package ca.sheridancollege.medreminder.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -18,44 +15,53 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ca.sheridancollege.medreminder.presentation.add.AddMedicationScreen
-import ca.sheridancollege.medreminder.presentation.auth.AuthViewModel
-import ca.sheridancollege.medreminder.presentation.auth.CompleteProfileScreen
-import ca.sheridancollege.medreminder.presentation.auth.LoginScreen
+import ca.sheridancollege.medreminder.presentation.auth.*
+import ca.sheridancollege.medreminder.presentation.emergency.EmergencyScreen
 import ca.sheridancollege.medreminder.presentation.history.HistoryScreen
 import ca.sheridancollege.medreminder.presentation.settings.ProfileDetailScreen
 import ca.sheridancollege.medreminder.presentation.settings.SettingsScreen
 import ca.sheridancollege.medreminder.presentation.today.TodayScreen
-import ca.sheridancollege.medreminder.presentation.emergency.EmergencyScreen
-import androidx.compose.material.icons.filled.Emergency
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
-    object Login : Screen("login", "Login", Icons.Default.Home)
-    object CompleteProfile : Screen("complete_profile", "Setup", Icons.Default.Home)
-    object Today : Screen("today", "Today", Icons.Default.Home)
-    object Add : Screen("add", "Add", Icons.Default.Add)
-    object History : Screen("history", "History", Icons.Default.DateRange)
-    object Settings : Screen("settings", "Settings", Icons.Default.Settings)
-    object ProfileDetail : Screen("profile_detail", "Profile", Icons.Default.Settings)
-    object Edit : Screen("edit/{medicationId}", "Edit", Icons.Default.Add)
-    object Emergency : Screen("emergency", "Emergency", Icons.Default.Emergency)
+    object Welcome       : Screen("welcome",         "Welcome",   Icons.Default.Home)
+    object Login         : Screen("login",           "Login",     Icons.Default.Home)
+    object SignUp        : Screen("signup",           "Sign Up",   Icons.Default.Home)
+    object CompleteProfile : Screen("complete_profile", "Setup",  Icons.Default.Home)
+    object Today         : Screen("today",           "Today",     Icons.Default.Home)
+    object Add           : Screen("add",             "Add",       Icons.Default.Add)
+    object History       : Screen("history",         "History",   Icons.Default.DateRange)
+    object Settings      : Screen("settings",        "Settings",  Icons.Default.Settings)
+    object ProfileDetail : Screen("profile_detail",  "Profile",   Icons.Default.Settings)
+    object Edit          : Screen("edit/{medicationId}", "Edit",  Icons.Default.Add)
+    object Emergency     : Screen("emergency",       "Emergency", Icons.Default.Emergency)
 }
 
-val bottomNavItems = listOf(Screen.Today, Screen.Add, Screen.History, Screen.Emergency, Screen.Settings)
+val bottomNavItems = listOf(
+    Screen.Today, Screen.Add, Screen.History, Screen.Emergency, Screen.Settings
+)
+
+private val noBottomBarRoutes = setOf(
+    Screen.Welcome.route, Screen.Login.route, Screen.SignUp.route,
+    Screen.CompleteProfile.route, Screen.ProfileDetail.route
+)
 
 @Composable
-fun AppNavigation(
-    authViewModel: AuthViewModel = hiltViewModel()
-) {
+fun AppNavigation(authViewModel: AuthViewModel = hiltViewModel()) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-    
+    val currentRoute = navBackStackEntry?.destination?.route
+
     val authState by authViewModel.state.collectAsState()
     val isLoggedIn = authState.user != null
     val isProfileComplete = authState.user?.isProfileComplete ?: false
 
-    val showBottomBar = isLoggedIn && isProfileComplete && bottomNavItems.any {
-        currentDestination?.hierarchy?.any { d -> d.route == it.route } == true
+    val showBottomBar = isLoggedIn && isProfileComplete &&
+            currentRoute != null && currentRoute !in noBottomBarRoutes
+
+    val startDestination = when {
+        !isLoggedIn     -> Screen.Welcome.route
+        !isProfileComplete -> Screen.CompleteProfile.route
+        else            -> Screen.Today.route
     }
 
     Scaffold(
@@ -64,11 +70,10 @@ fun AppNavigation(
                 NavigationBar {
                     bottomNavItems.forEach { screen ->
                         NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.label) },
+                            icon = { Icon(screen.icon, screen.label) },
                             label = { Text(screen.label) },
-                            selected = currentDestination?.hierarchy?.any {
-                                it.route == screen.route
-                            } == true,
+                            selected = navBackStackEntry?.destination?.hierarchy
+                                ?.any { it.route == screen.route } == true,
                             onClick = {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
@@ -86,17 +91,35 @@ fun AppNavigation(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = if (!isLoggedIn) Screen.Login.route 
-                              else if (!isProfileComplete) Screen.CompleteProfile.route 
-                              else Screen.Today.route,
+            startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
+            // ── Auth flow ──────────────────────────────────────────
+            composable(Screen.Welcome.route) {
+                WelcomeScreen(
+                    onLoginClick = { navController.navigate(Screen.Login.route) },
+                    onSignUpClick = { navController.navigate(Screen.SignUp.route) }
+                )
+            }
             composable(Screen.Login.route) {
                 LoginScreen(
                     viewModel = authViewModel,
                     onLoginSuccess = {
-                        // Navigation is handled by startDestination logic in NavHost init mostly,
-                        // but explicit navigation helps for instantaneous feedback.
+                        navController.navigate(Screen.Today.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) }
+                )
+            }
+            composable(Screen.SignUp.route) {
+                SignUpScreen(
+                    viewModel = authViewModel,
+                    onNavigateToLogin = { navController.popBackStack() },
+                    onSignUpSuccess = {
+                        navController.navigate(Screen.CompleteProfile.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = false }
+                        }
                     }
                 )
             }
@@ -105,19 +128,17 @@ fun AppNavigation(
                     viewModel = authViewModel,
                     onComplete = {
                         navController.navigate(Screen.Today.route) {
-                            popUpTo(Screen.CompleteProfile.route) { inclusive = true }
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
                         }
                     }
                 )
             }
+
+            // ── Main app ──────────────────────────────────────────
             composable(Screen.Today.route) {
                 TodayScreen(
-                    onEditMedication = { id ->
-                        navController.navigate("edit/$id")
-                    },
-                    onNavigateToProfile = {
-                        navController.navigate(Screen.ProfileDetail.route)
-                    }
+                    onEditMedication = { navController.navigate("edit/$it") },
+                    onNavigateToProfile = { navController.navigate(Screen.ProfileDetail.route) }
                 )
             }
             composable(Screen.Add.route) {
@@ -125,18 +146,14 @@ fun AppNavigation(
             }
             composable("edit/{medicationId}") { backStackEntry ->
                 val id = backStackEntry.arguments?.getString("medicationId")?.toIntOrNull() ?: 0
-                AddMedicationScreen(
-                    medicationId = id,
-                    onNavigateBack = { navController.popBackStack() }
-                )
+                AddMedicationScreen(medicationId = id,
+                    onNavigateBack = { navController.popBackStack() })
             }
-            composable(Screen.History.route) { HistoryScreen() }
+            composable(Screen.History.route)  { HistoryScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(Screen.Emergency.route) { EmergencyScreen() }
             composable(Screen.ProfileDetail.route) {
-                ProfileDetailScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
+                ProfileDetailScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }
