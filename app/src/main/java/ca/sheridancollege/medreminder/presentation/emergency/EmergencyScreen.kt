@@ -478,3 +478,122 @@ fun EditMedicalDialog(
         dismissButton = { OutlinedButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
+
+@Composable
+fun NearbyHospitalsCard(
+    hospitals: List<NearbyHospital>,
+    isLoading: Boolean,
+    locationError: String?,
+    onFindHospitals: () -> Unit,
+    onCallHospital: (String) -> Unit
+) {
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) onFindHospitals() }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(3.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+            Row(modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.LocalHospital, null, tint = Color(0xFF1565C0))
+                    Text("Nearby Hospitals",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold)
+                }
+                if (!isLoading) {
+                    IconButton(onClick = {
+                        locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                    }) {
+                        Icon(Icons.Default.MyLocation, null,
+                            tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
+            when {
+                isLoading -> {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Text("Finding nearest hospitals...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                locationError != null -> {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Warning, null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp))
+                        Text(locationError, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                hospitals.isEmpty() -> {
+                    OutlinedButton(
+                        onClick = {
+                            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Find Nearest Hospitals")
+                    }
+                }
+                else -> {
+                    hospitals.forEach { hospital ->
+                        HospitalItem(hospital = hospital, onCall = { onCallHospital(hospital.phone) })
+                        if (hospital != hospitals.last()) HorizontalDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HospitalItem(hospital: NearbyHospital, onCall: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFF1565C0).copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.LocalHospital, null,
+                tint = Color(0xFF1565C0), modifier = Modifier.size(20.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(hospital.name, style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold)
+            Text(hospital.address, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (hospital.distance > 0) {
+                Text(HospitalFinder.formatDistance(hospital.distance),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        if (hospital.phone.isNotBlank()) {
+            FilledTonalIconButton(onClick = onCall,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = Color(0xFF2E7D32).copy(alpha = 0.15f)
+                )) {
+                Icon(Icons.Default.Phone, null,
+                    tint = Color(0xFF2E7D32), modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+}

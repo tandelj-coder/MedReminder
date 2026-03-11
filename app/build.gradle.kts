@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.auth)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
