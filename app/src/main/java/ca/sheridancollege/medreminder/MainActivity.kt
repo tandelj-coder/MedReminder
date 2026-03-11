@@ -10,33 +10,30 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.*
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.lifecycleScope
 import ca.sheridancollege.medreminder.data.datastore.UserPreferencesDataStore
 import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenUseCase
 import ca.sheridancollege.medreminder.navigation.AppNavigation
 import ca.sheridancollege.medreminder.ui.theme.MedReminderTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject
-    lateinit var userPreferences: UserPreferencesDataStore
-
-    @Inject
-    lateinit var markAsTakenUseCase: MarkAsTakenUseCase
+    @Inject lateinit var userPreferences: UserPreferencesDataStore
+    @Inject lateinit var markAsTakenUseCase: MarkAsTakenUseCase
 
     private var nfcAdapter: NfcAdapter? = null
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* permission result handled silently */ }
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,9 +44,12 @@ class MainActivity : ComponentActivity() {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
+        // Read initial dark theme synchronously so there's no flash on startup
+        val initialDarkTheme = runBlocking { userPreferences.darkTheme.first() }
+
         setContent {
-            val systemDark = isSystemInDarkTheme()
-            val darkTheme by userPreferences.darkTheme.collectAsState(initial = systemDark)
+            // Collect as state — updates instantly when toggled in Settings
+            val darkTheme by userPreferences.darkTheme.collectAsState(initial = initialDarkTheme)
 
             MedReminderTheme(darkTheme = darkTheme, dynamicColor = false) {
                 AppNavigation()
@@ -82,10 +82,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleNfcTag(tagId: String) {
         lifecycleScope.launch {
-            // Find medication by tagId and mark as taken
-            // This logic can be expanded in the Repository to find by nfcTagId
-            Toast.makeText(this@MainActivity, "NFC Tag Detected: $tagId", Toast.LENGTH_SHORT).show()
-            // Here you would call a use case: markAsTakenByNfcUseCase(tagId)
+            Toast.makeText(this@MainActivity, "NFC Tag: $tagId", Toast.LENGTH_SHORT).show()
         }
     }
 }

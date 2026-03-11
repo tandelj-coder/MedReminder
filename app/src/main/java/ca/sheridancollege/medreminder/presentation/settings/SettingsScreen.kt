@@ -1,197 +1,327 @@
 package ca.sheridancollege.medreminder.presentation.settings
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import ca.sheridancollege.medreminder.presentation.auth.AuthViewModel
-import coil.compose.AsyncImage
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    onNavigateToProfile: () -> Unit = {},
-    viewModel: SettingsViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
-) {
+fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    val authState by authViewModel.state.collectAsState()
 
-    Scaffold(
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        "Settings",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            )
-        }
-    ) { padding ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Header gradient same style as Today screen
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF0D2447),
+                            Color(0xFF1A3A6E),
+                            MaterialTheme.colorScheme.background
+                        )
+                    )
+                )
+                .padding(horizontal = 20.dp, vertical = 24.dp)
         ) {
-            // Profile Section
-            authState.user?.let { user ->
-                ListItem(
-                    modifier = Modifier.clickable { onNavigateToProfile() },
-                    headlineContent = { Text(user.displayName ?: "User", fontWeight = FontWeight.Bold) },
-                    supportingContent = { Text(user.email ?: "") },
-                    leadingContent = {
-                        if (user.photoUrl != null) {
-                            AsyncImage(
-                                model = user.photoUrl,
-                                contentDescription = "Profile Picture",
-                                modifier = Modifier.size(56.dp).clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Outlined.Person, null)
-                                }
+            Column {
+                Text(
+                    "Settings",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    "Manage your preferences",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                // Streak banner
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White.copy(alpha = 0.12f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("🔥", fontSize = 28.sp)
+                            Column {
+                                Text(
+                                    "${uiState.streakCount} Day Streak",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    if (uiState.streakCount == 0) "Start your streak today!"
+                                    else "Keep it up!",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.75f)
+                                )
                             }
                         }
-                    },
-                    trailingContent = {
-                        IconButton(onClick = { authViewModel.signOut() }) {
-                            Icon(Icons.AutoMirrored.Outlined.Logout, null, tint = MaterialTheme.colorScheme.error)
+                        // 7-day dots
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            repeat(7) { i ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(
+                                            if (i < uiState.streakCount.coerceAtMost(7))
+                                                Color(0xFF00BCD4)
+                                            else
+                                                Color.White.copy(alpha = 0.25f)
+                                        )
+                                )
+                            }
                         }
                     }
-                )
+                }
             }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            Text(
-                "Preferences",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            ListItem(
-                headlineContent = { Text("Notifications") },
-                supportingContent = { Text("Receive medication reminders") },
-                trailingContent = {
-                    Switch(
-                        checked = uiState.notificationsEnabled,
-                        onCheckedChange = viewModel::setNotificationsEnabled
-                    )
-                }
-            )
-
-            ListItem(
-                headlineContent = { Text("Dark Theme") },
-                supportingContent = { Text("Switch between light and dark mode") },
-                trailingContent = {
-                    Switch(
-                        checked = uiState.darkTheme,
-                        onCheckedChange = viewModel::setDarkTheme
-                    )
-                }
-            )
-
-            ListItem(
-                headlineContent = { Text("Snooze Duration") },
-                supportingContent = { Text("${uiState.snoozeMinutes} minutes") },
-                trailingContent = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { if (uiState.snoozeMinutes > 5) viewModel.setSnoozeMinutes(uiState.snoozeMinutes - 5) }) {
-                            Icon(Icons.Outlined.RemoveCircleOutline, null)
-                        }
-                        Text("${uiState.snoozeMinutes}m", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { if (uiState.snoozeMinutes < 60) viewModel.setSnoozeMinutes(uiState.snoozeMinutes + 5) }) {
-                            Icon(Icons.Outlined.AddCircleOutline, null)
-                        }
-                    }
-                }
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            Text(
-                "Account",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            ListItem(
-                headlineContent = { Text("Reset All Data", color = MaterialTheme.colorScheme.error) },
-                supportingContent = { Text("Deletes all medications and history") },
-                trailingContent = {
-                    TextButton(onClick = { viewModel.onResetAllRequested() }) {
-                        Text("RESET", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                    }
-                }
-            )
-
-            Spacer(Modifier.height(32.dp))
-            
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    "MedReminder",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    letterSpacing = 2.sp
-                )
-                Text(
-                    "v1.0.0",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                )
-            }
-            
-            Spacer(Modifier.height(48.dp))
         }
-    }
 
-    if (uiState.showResetConfirm) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onResetAllDismissed() },
-            title = { Text("Reset All Data?") },
-            text = { Text("This will permanently delete all your medications and history. This action cannot be undone.") },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.onResetAllConfirmed() },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("YES, RESET")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.onResetAllDismissed() }) {
-                    Text("CANCEL")
-                }
-            }
+        Spacer(Modifier.height(8.dp))
+
+        // Preferences section
+        SettingsSectionHeader("Preferences")
+
+        SettingsToggleItem(
+            icon = Icons.Default.Notifications,
+            title = "Notifications",
+            subtitle = "Receive medication reminders",
+            checked = uiState.notificationsEnabled,
+            onCheckedChange = { viewModel.setNotificationsEnabled(it) }
         )
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+        SettingsToggleItem(
+            icon = Icons.Default.DarkMode,
+            title = "Dark Theme",
+            subtitle = "Switch to dark mode",
+            checked = uiState.darkTheme,
+            onCheckedChange = { viewModel.setDarkTheme(it) }
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+        // Snooze Duration
+        SettingsStepperItem(
+            icon = Icons.Default.Alarm,
+            title = "Snooze Duration",
+            subtitle = "${uiState.snoozeMinutes} minutes",
+            onDecrement = { viewModel.setSnoozeMinutes(uiState.snoozeMinutes - 5) },
+            onIncrement = { viewModel.setSnoozeMinutes(uiState.snoozeMinutes + 5) },
+            canDecrement = uiState.snoozeMinutes > 5,
+            canIncrement = uiState.snoozeMinutes < 60
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Danger zone
+        SettingsSectionHeader("Danger Zone", color = MaterialTheme.colorScheme.error)
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.DeleteForever, null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp))
+                    Column {
+                        Text("Reset All Data",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error)
+                        Text("Deletes all medications, history & streak",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer)
+                    }
+                }
+                FilledTonalButton(
+                    onClick = { viewModel.onResetAllRequested() },
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("Reset") }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // App info
+        SettingsSectionHeader("App Info")
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("MedReminder",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold)
+                Text("Built with Kotlin, Jetpack Compose, Room, Hilt & WorkManager",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Sheridan College — Jigar Tandel",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        Spacer(Modifier.height(100.dp))
+    }
+}
+
+@Composable
+fun SettingsSectionHeader(title: String, color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+    Text(
+        title,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = color,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+    )
+}
+
+@Composable
+fun SettingsToggleItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp))
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = MaterialTheme.colorScheme.primary
+            )
+        )
+    }
+}
+
+@Composable
+fun SettingsStepperItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit,
+    canDecrement: Boolean,
+    canIncrement: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp))
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onDecrement, enabled = canDecrement) {
+                Icon(Icons.Default.Remove, null)
+            }
+            IconButton(onClick = onIncrement, enabled = canIncrement) {
+                Icon(Icons.Default.Add, null)
+            }
+        }
     }
 }
