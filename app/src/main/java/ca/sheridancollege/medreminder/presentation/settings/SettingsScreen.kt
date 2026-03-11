@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -237,8 +238,25 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Delete Account section
-        SettingsSectionHeader("Account", color = MaterialTheme.colorScheme.error)
+        // Account section
+        SettingsSectionHeader("Account")
+
+        // Sign Out Button
+        Button(
+            onClick = {
+                authViewModel.signOut()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.Logout, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Sign Out", fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(8.dp)) // Add some space between sign out and delete account
 
         Card(
             modifier = Modifier
