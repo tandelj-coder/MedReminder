@@ -5,14 +5,28 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Modern Expressive Medical Cross -->
+    <!-- Outer Racing Ring (Speedometer Style) -->
     <path
+        android:pathData="M54,20c-18.8,0 -34,15.2 -34,34s15.2,34 34,34s34,-15.2 34,-34S72.8,20 54,20zM54,82c-15.5,0 -28,-12.5 -28,-28s12.5,-28 28,-28s28,12.5 28,28S69.5,82 54,82z"
         android:fillColor="#FFFFFF"
-        android:pathData="M54,34c-11,0 -20,9 -20,20s9,20 20,20s20,-9 20,-20S65,34 54,34zM64,57h-7v7h-6v-7h-7v-6h7v-7h6v7h7V57z" />
+        android:fillAlpha="0.2" />
 
-    <!-- Subtle Inner Glow / Detail -->
+    <!-- Racing Accent (Ferrari Red Arc) -->
     <path
-        android:fillColor="#D0BCFF"
-        android:pathData="M54,38c-8.8,0 -16,7.2 -16,16s7.2,16 16,16s16,-7.2 16,-16S62.8,38 54,38zM54,68c-7.7,0 -14,-6.3 -14,-14s6.3,-14 14,-14s14,6.3 14,14S61.7,68 54,68z"
-        android:fillAlpha="0.3" />
+        android:pathData="M54,20c18.8,0 34,15.2 34,34"
+        android:strokeWidth="4"
+        android:strokeColor="#E10600"
+        android:strokeLineCap="round" />
+
+    <!-- Medical Cross (Racing Red) -->
+    <path
+        android:fillColor="#E10600"
+        android:pathData="M44,51h7v-7h6v7h7v6h-7v7h-6v-7h-7z" />
+
+    <!-- Stylized Speed Lines -->
+    <path
+        android:pathData="M25,54h6M27,44h4M27,64h4"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
 </vector>
