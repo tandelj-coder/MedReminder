@@ -2,6 +2,7 @@ package ca.sheridancollege.medreminder.data.repository
 
 import ca.sheridancollege.medreminder.domain.model.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -110,6 +111,8 @@ class AuthRepositoryImpl @Inject constructor(
             )
             firestoreSyncRepository.saveUserInfo(user)
             Result.success(user)
+        } catch (e: FirebaseAuthUserCollisionException) {
+            Result.failure(Exception("This email address is already registered."))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -143,7 +146,7 @@ class AuthRepositoryImpl @Inject constructor(
             }
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Invalid email or password."))
         }
     }
 

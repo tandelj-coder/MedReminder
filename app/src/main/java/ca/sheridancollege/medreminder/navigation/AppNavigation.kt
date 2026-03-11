@@ -131,7 +131,11 @@ fun AppNavigation(authViewModel: AuthViewModel = hiltViewModel()) {
             composable(Screen.SignUp.route) {
                 SignUpScreen(
                     viewModel = authViewModel,
-                    onNavigateToLogin = { navController.popBackStack() },
+                    onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.SignUp.route) { inclusive = true }
+                    }
+                },
                     onSignUpSuccess = {
                         navController.navigate(Screen.CompleteProfile.route) {
                             popUpTo(Screen.Welcome.route) { inclusive = false }
