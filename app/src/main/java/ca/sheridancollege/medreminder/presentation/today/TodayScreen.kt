@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,7 +13,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,8 +27,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -33,6 +38,7 @@ import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,60 +53,46 @@ fun TodayScreen(
     val isGoalReached = uiState.adherenceStats.totalScheduled > 0 && 
                         uiState.adherenceStats.totalTaken == uiState.adherenceStats.totalScheduled
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepPaddock)
-            .drawBehind {
-                val path = Path().apply {
-                    moveTo(size.width * 0.7f, 0f)
-                    lineTo(size.width, 0f)
-                    lineTo(size.width * 0.8f, size.height)
-                    lineTo(size.width * 0.5f, size.height)
-                    close()
-                }
-                drawPath(path, color = Color.White.copy(alpha = 0.02f))
-            }
-    ) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                LargeTopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                "PADDOCK HUB",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 3.sp,
-                                color = RacingRed,
-                                fontStyle = FontStyle.Italic
-                            )
-                            Text(
-                                SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date()).uppercase(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextGray,
-                                letterSpacing = 1.sp
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onNavigateToProfile) {
-                            Icon(Icons.Outlined.Person, contentDescription = "Profile", tint = Color.White)
-                        }
-                        IconButton(onClick = { viewModel.onResetTodayRequested() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White)
-                        }
-                    },
-                    colors = TopAppBarDefaults.largeTopAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = Color.White,
-                        scrolledContainerColor = CardDark.copy(alpha = 0.9f)
-                    ),
-                    scrollBehavior = scrollBehavior
-                )
-            }
-        ) { padding ->
+    Scaffold(
+        containerColor = DeepPaddock,
+        topBar = {
+            LargeTopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            "PADDOCK HUB",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 3.sp,
+                            color = RacingRed,
+                            fontStyle = FontStyle.Italic
+                        )
+                        Text(
+                            SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date()).uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextGray,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToProfile) {
+                        Icon(Icons.Outlined.Person, contentDescription = "Profile", tint = Color.White)
+                    }
+                    IconButton(onClick = { viewModel.onResetTodayRequested() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = DeepPaddock,
+                    titleContentColor = Color.White,
+                    scrolledContainerColor = CardDark.copy(alpha = 0.9f)
+                ),
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -192,48 +184,66 @@ fun TodayScreen(
                 val taken = uiState.medications.filter { it.isTakenToday }
 
                 if (pending.isNotEmpty()) {
-                    item { 
-                        SectionHeader(title = "UPCOMING SESSIONS", color = RacingRed)
-                    }
-                    items(pending) { med ->
-                        PaddockMedicationItem(
+                    item { SectionHeader(title = "UPCOMING SESSIONS", color = RacingRed) }
+                    items(pending, key = { it.id }) { med ->
+                        SwipeablePaddockMedicationItem(
                             medication = med,
-                            onMark = { viewModel.onMarkAsTaken(med) },
+                            onSwipeConfirm = { viewModel.onMarkAsTaken(med) },
+                            onDelete = { viewModel.onDeleteMedication(med) },
                             onEdit = { onEditMedication(med.id) }
                         )
                     }
                 }
 
                 if (taken.isNotEmpty()) {
-                    item { 
-                        SectionHeader(title = "COMPLETED LAPS", color = RacingTeal)
-                    }
-                    items(taken) { med ->
-                        PaddockMedicationItem(
+                    item { SectionHeader(title = "COMPLETED LAPS", color = RacingTeal) }
+                    items(taken, key = { it.id }) { med ->
+                        SwipeablePaddockMedicationItem(
                             medication = med,
-                            onMark = {},
+                            onSwipeConfirm = {}, // Already taken
+                            onDelete = { viewModel.onDeleteMedication(med) },
                             onEdit = { onEditMedication(med.id) }
                         )
                     }
                 }
             }
 
-            if (isGoalReached) {
-                CheckeredFlagCelebration()
-            }
+            if (isGoalReached) { CheckeredFlagCelebration() }
         }
+    }
+
+    // Double Dose Dialog (F1 Racing Theme)
+    uiState.doubleDoseWarning?.let { warning ->
+        AlertDialog(
+            onDismissRequest = { viewModel.onDismissDoubleDoseWarning() },
+            containerColor = CardDark,
+            titleContentColor = RacingRed,
+            textContentColor = Color.White,
+            icon = { Icon(Icons.Default.Warning, null, tint = RacingRed, modifier = Modifier.size(40.dp)) },
+            title = { Text("DOUBLE DOSE WARNING", fontWeight = FontWeight.Black) },
+            text = {
+                Text(
+                    "You already completed this lap ${warning.minutesSinceLastDose} minutes ago. Entering the pits again may be dangerous. Confirm additional pit stop?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.onConfirmDoubleDose(warning.medication) },
+                    colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
+                ) { Text("CONFIRM", fontWeight = FontWeight.Black) }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.onDismissDoubleDoseWarning() }) { 
+                    Text("ABORT", color = Color.White) 
+                }
+            }
+        )
     }
 }
 
 @Composable
-fun TelemetryCard(
-    modifier: Modifier = Modifier,
-    label: String,
-    value: String,
-    unit: String,
-    color: Color,
-    icon: String
-) {
+fun TelemetryCard(modifier: Modifier = Modifier, label: String, value: String, unit: String, color: Color, icon: String) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
@@ -265,70 +275,66 @@ fun SectionHeader(title: String, color: Color) {
 }
 
 @Composable
-fun PaddockMedicationItem(
+fun SwipeablePaddockMedicationItem(
     medication: Medication,
-    onMark: () -> Unit,
+    onSwipeConfirm: () -> Unit,
+    onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    val animatedOffset by animateFloatAsState(targetValue = offsetX)
     val isTaken = medication.isTakenToday
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onEdit() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isTaken) CardDark.copy(alpha = 0.5f) else CardDark),
-        border = if (!isTaken) androidx.compose.foundation.BorderStroke(1.dp, GlassBorder) else null
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(if (isTaken) RacingTeal.copy(alpha = 0.1f) else RacingRed.copy(alpha = 0.1f))
-                    .border(2.dp, if (isTaken) RacingTeal.copy(alpha = 0.3f) else RacingRed.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    medication.name.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
-                    color = if (isTaken) RacingTeal else RacingRed
-                )
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Swipe Backgrounds
+        if (offsetX > 0 && !isTaken) {
+            Box(Modifier.fillMaxSize().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(RacingTeal.copy(alpha = 0.2f)).padding(start = 24.dp), contentAlignment = Alignment.CenterStart) {
+                Icon(Icons.Default.Check, null, tint = RacingTeal)
             }
-
-            Spacer(Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    medication.name.uppercase(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black,
-                    color = if (isTaken) TextGray else Color.White,
-                    letterSpacing = 0.5.sp
-                )
-                Text(
-                    "${medication.dosage} MG • ${medication.formattedTime()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextGray,
-                    fontWeight = FontWeight.Bold
-                )
+        } else if (offsetX < 0) {
+            Box(Modifier.fillMaxSize().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(RacingRed.copy(alpha = 0.2f)).padding(end = 24.dp), contentAlignment = Alignment.CenterEnd) {
+                Icon(Icons.Default.Delete, null, tint = RacingRed)
             }
+        }
 
-            if (!isTaken) {
-                FilledIconButton(
-                    onClick = onMark,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = RacingTeal)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = "Mark Taken", tint = DeepPaddock)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(animatedOffset.roundToInt(), 0) }
+                .pointerInput(isTaken) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (offsetX > 200f && !isTaken) onSwipeConfirm()
+                            else if (offsetX < -200f) onDelete()
+                            offsetX = 0f
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            offsetX = (offsetX + dragAmount).coerceIn(-250f, 250f)
+                        }
+                    )
                 }
-            } else {
-                Icon(Icons.Default.Check, contentDescription = "Taken", tint = RacingTeal, modifier = Modifier.size(28.dp))
-            }
+                .clickable { onEdit() },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = CardDark)
+        ) {
+            ListItem(
+                headlineContent = { Text(medication.name.uppercase(), fontWeight = FontWeight.Black, color = Color.White) },
+                supportingContent = { Text("${medication.dosage} MG • ${medication.formattedTime()}", color = TextGray, fontWeight = FontWeight.Bold) },
+                leadingContent = {
+                    Box(
+                        modifier = Modifier.size(52.dp).clip(CircleShape)
+                            .background(if (isTaken) RacingTeal.copy(alpha = 0.1f) else RacingRed.copy(alpha = 0.1f))
+                            .border(2.dp, if (isTaken) RacingTeal.copy(alpha = 0.3f) else RacingRed.copy(alpha = 0.3f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(medication.name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = if (isTaken) RacingTeal else RacingRed)
+                    }
+                },
+                trailingContent = {
+                    if (isTaken) Icon(Icons.Default.Check, null, tint = RacingTeal, modifier = Modifier.size(28.dp))
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+            )
         }
     }
 }
@@ -337,50 +343,15 @@ fun PaddockMedicationItem(
 fun CheckeredFlagCelebration() {
     val infiniteTransition = rememberInfiniteTransition()
     val alpha by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 0.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
+        initialValue = 0f, targetValue = 0.1f,
+        animationSpec = infiniteRepeatable(animation = tween(1000, easing = LinearEasing), repeatMode = RepeatMode.Reverse)
     )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    listOf(Color.White.copy(alpha = alpha), Color.Transparent)
-                )
-            )
-            .drawBehind {
-                val size = 40.dp.toPx()
-                for (x in 0..20) {
-                    for (y in 0..40) {
-                        if ((x + y) % 2 == 0) {
-                            drawRect(
-                                color = Color.White.copy(alpha = 0.03f),
-                                topLeft = Offset(x * size, y * size),
-                                size = androidx.compose.ui.geometry.Size(size, size)
-                            )
-                        }
-                    }
-                }
-            },
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Surface(
-            modifier = Modifier.padding(bottom = 32.dp),
-            color = RacingTeal,
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text(
-                "P1 - SESSION COMPLETE 🏁",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                fontWeight = FontWeight.Black,
-                color = DeepPaddock,
-                letterSpacing = 2.sp
-            )
+    Box(modifier = Modifier.fillMaxSize().drawBehind {
+        val size = 40.dp.toPx()
+        for (x in 0..20) for (y in 0..40) if ((x + y) % 2 == 0) drawRect(color = Color.White.copy(alpha = 0.03f), topLeft = Offset(x * size, y * size), size = androidx.compose.ui.geometry.Size(size, size))
+    }, contentAlignment = Alignment.BottomCenter) {
+        Surface(modifier = Modifier.padding(bottom = 32.dp), color = RacingTeal, shape = RoundedCornerShape(8.dp)) {
+            Text("P1 - SESSION COMPLETE 🏁", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontWeight = FontWeight.Black, color = DeepPaddock, letterSpacing = 2.sp)
         }
     }
 }
