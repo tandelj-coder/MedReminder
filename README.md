@@ -6,6 +6,18 @@ An Android medication management platform built with **Kotlin** and **Jetpack Co
 
 ---
 
+## 📸 App Showcase
+
+| Welcome | Auth | Profile | Dashboard | History |
+| :---: | :---: | :---: | :---: | :---: |
+| ![Welcome](screenshots/welcome.jpeg) | ![Login](screenshots/login.jpeg) | ![Profile](screenshots/profile.jpeg) | ![Today](screenshots/todayscreen.jpeg) | ![History](screenshots/history.jpeg) |
+
+| Emergency | Settings | Add Med | Reminder |
+| :---: | :---: | :---: | :---: |
+| ![Emergency](screenshots/emergency.jpeg) | ![Settings](screenshots/setting.jpeg) | ![Add](screenshots/addmedicationreminder.jpeg) | ![Reminder](screenshots/remindersample.jpeg) |
+
+---
+
 ## 🚀 Key Innovation: "Racing Towards Health"
 
 MedReminder transforms boring medication logs into a high-performance **Telemetry Dashboard**. Using a hybrid design of **Material 3 Expressive** components and a **F1 Paddock aesthetic**, users track their "Pit Stops" (doses) and "Laps" (completion) with professional precision.
