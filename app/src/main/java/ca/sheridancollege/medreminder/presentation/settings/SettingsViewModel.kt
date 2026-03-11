@@ -86,4 +86,13 @@ class SettingsViewModel @Inject constructor(
     fun onSignOutRequested() {
         viewModelScope.launch { authRepository.signOut() }
     }
+
+    fun sendTestNotification(context: android.content.Context) {
+        ca.sheridancollege.medreminder.worker.MedicationAlarmScheduler.showNotification(
+            context = context,
+            medId = 9999,
+            medName = "Test Medication",
+            dosage = "1 tablet"
+        )
+    }
 }
