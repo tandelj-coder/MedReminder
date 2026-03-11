@@ -94,7 +94,7 @@ class AuthRepositoryImpl @Inject constructor(
             }
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Google Sign-in failed. This user may already exist or there was a network error."))
         }
     }
 
@@ -112,7 +112,7 @@ class AuthRepositoryImpl @Inject constructor(
             firestoreSyncRepository.saveUserInfo(user)
             Result.success(user)
         } catch (e: FirebaseAuthUserCollisionException) {
-            Result.failure(Exception("This email address is already registered."))
+            Result.failure(Exception("This email address is already registered. Please sign in."))
         } catch (e: Exception) {
             Result.failure(e)
         }
