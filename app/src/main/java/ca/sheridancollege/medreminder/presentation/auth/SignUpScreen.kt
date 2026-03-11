@@ -198,7 +198,7 @@ fun SignUpScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center) {
-                        Icon(painter = painterResource(R.drawable.ic_launcher_foreground),
+                        Icon(painter = painterResource(R.drawable.ic_google),
                             contentDescription = null, modifier = Modifier.size(22.dp),
                             tint = Color.Unspecified)
                         Spacer(Modifier.width(10.dp))
