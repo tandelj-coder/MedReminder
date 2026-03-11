@@ -19,7 +19,7 @@ MedReminder transforms boring medication logs into a high-performance **Telemetr
 
 ## 🔐 Security & Cloud
 
-- **Multi-Account Authentication** — Secure login via **Google Sign-In** or Email/Password.
+- **Multi-Account Authentication** — Secure login via **Google Sign-In** or Email/Password, with automatic existing-user detection and helpful sign-in prompts.
 - **Cloud Synchronization** — Every dose, medication, and profile detail is backed up in real-time to **Firebase Firestore**.
 - **User Telemetry** — Tracks personal health metrics including Height, Weight, and medical conditions for a personalized experience.
 
