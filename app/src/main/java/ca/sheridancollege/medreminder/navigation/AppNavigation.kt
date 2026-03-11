@@ -59,9 +59,25 @@ fun AppNavigation(authViewModel: AuthViewModel = hiltViewModel()) {
             currentRoute != null && currentRoute !in noBottomBarRoutes
 
     val startDestination = when {
-        !isLoggedIn     -> Screen.Welcome.route
+        !isLoggedIn        -> Screen.Welcome.route
         !isProfileComplete -> Screen.CompleteProfile.route
-        else            -> Screen.Today.route
+        else               -> Screen.Today.route
+    }
+
+    // React to auth state changes (sign out, delete account)
+    LaunchedEffect(isLoggedIn, isProfileComplete) {
+        when {
+            !isLoggedIn -> navController.navigate(Screen.Welcome.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+            !isProfileComplete && currentRoute != Screen.CompleteProfile.route -> {
+                navController.navigate(Screen.CompleteProfile.route) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        }
     }
 
     Scaffold(

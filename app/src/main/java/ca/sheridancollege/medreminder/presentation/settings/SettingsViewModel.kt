@@ -2,6 +2,7 @@ package ca.sheridancollege.medreminder.presentation.settings
 
 import ca.sheridancollege.medreminder.data.datastore.UserPreferencesDataStore
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
+import ca.sheridancollege.medreminder.data.repository.AuthRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +24,8 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val dataStore: UserPreferencesDataStore,
-    private val repository: MedicationRepository
+    private val repository: MedicationRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(Triple(false, false, false)) // showConfirm, resetDone, showDeleteConfirm
@@ -80,4 +82,8 @@ class SettingsViewModel @Inject constructor(
     // ── Delete Account ──────────────────────────────────────────────
     fun onDeleteAccountRequested() { _extra.value = Triple(false, false, true) }
     fun onDeleteAccountDismissed() { _extra.value = Triple(false, false, false) }
+
+    fun onSignOutRequested() {
+        viewModelScope.launch { authRepository.signOut() }
+    }
 }
