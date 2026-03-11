@@ -30,7 +30,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        containerColor = DeepPaddock
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -43,7 +43,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
             Text(
                 "LOGBOOK",
                 style = MaterialTheme.typography.labelMedium,
-                color = TextGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 2.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -51,7 +51,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                 "Session History",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Black,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
             
             Spacer(Modifier.height(32.dp))
@@ -84,7 +84,7 @@ fun PaddockHistoryCard(log: IntakeLog) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = CardDark,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(
             1.dp, 
             if (log.wasDoubleDoseAttempt) RacingRed.copy(alpha = 0.5f) else RacingTeal.copy(alpha = 0.3f)
@@ -120,12 +120,12 @@ fun PaddockHistoryCard(log: IntakeLog) {
                     log.medicationName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     log.formattedDate(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -134,7 +134,7 @@ fun PaddockHistoryCard(log: IntakeLog) {
                     log.formattedTime(),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     if (log.wasOnTime) "ON TIME" else "LATE",
@@ -152,12 +152,12 @@ fun PaddockHistoryCard(log: IntakeLog) {
 fun EmptyHistoryState() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Outlined.History, null, tint = TextGray, modifier = Modifier.size(48.dp))
+            Icon(Icons.Outlined.History, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
             Spacer(Modifier.height(16.dp))
             Text(
                 "No telemetry data.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
         }

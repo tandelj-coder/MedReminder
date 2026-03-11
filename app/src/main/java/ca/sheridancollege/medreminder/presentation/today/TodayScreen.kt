@@ -54,7 +54,7 @@ fun TodayScreen(
                         uiState.adherenceStats.totalTaken == uiState.adherenceStats.totalScheduled
 
     Scaffold(
-        containerColor = DeepPaddock,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -70,23 +70,23 @@ fun TodayScreen(
                         Text(
                             SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date()).uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextGray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = onNavigateToProfile) {
-                        Icon(Icons.Outlined.Person, contentDescription = "Profile", tint = Color.White)
+                        Icon(Icons.Outlined.Person, contentDescription = "Profile", tint = MaterialTheme.colorScheme.onBackground)
                     }
                     IconButton(onClick = { viewModel.onResetTodayRequested() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White)
+                        Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = DeepPaddock,
-                    titleContentColor = Color.White,
-                    scrolledContainerColor = CardDark.copy(alpha = 0.9f)
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
                 ),
                 scrollBehavior = scrollBehavior
             )
@@ -132,7 +132,7 @@ fun TodayScreen(
                     
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("TRACK COMPLETION", style = MaterialTheme.typography.labelSmall, color = TextGray, fontWeight = FontWeight.Bold)
+                            Text("TRACK COMPLETION", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                             Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = RacingTeal, fontWeight = FontWeight.Bold)
                         }
                         LinearProgressIndicator(
@@ -142,7 +142,7 @@ fun TodayScreen(
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(6.dp)),
                             color = RacingTeal,
-                            trackColor = CardDark,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                         )
                     }
@@ -163,17 +163,17 @@ fun TodayScreen(
                             ) {
                                 Column {
                                     Text("NEXT PIT STOP", style = MaterialTheme.typography.labelSmall, color = RacingRed, fontWeight = FontWeight.Black)
-                                    Text(it.medicationName.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color.White)
+                                    Text(it.medicationName.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
                                         formatMillis(it.remainingTimeMillis),
                                         style = MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.Black,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                                     )
-                                    Text("UNTIL GREEN FLAG", style = MaterialTheme.typography.labelSmall, color = TextGray)
+                                    Text("UNTIL GREEN FLAG", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -216,9 +216,9 @@ fun TodayScreen(
     uiState.doubleDoseWarning?.let { warning ->
         AlertDialog(
             onDismissRequest = { viewModel.onDismissDoubleDoseWarning() },
-            containerColor = CardDark,
+            containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = RacingRed,
-            textContentColor = Color.White,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
             icon = { Icon(Icons.Default.Warning, null, tint = RacingRed, modifier = Modifier.size(40.dp)) },
             title = { Text("DOUBLE DOSE WARNING", fontWeight = FontWeight.Black) },
             text = {
@@ -231,11 +231,11 @@ fun TodayScreen(
                 Button(
                     onClick = { viewModel.onConfirmDoubleDose(warning.medication) },
                     colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
-                ) { Text("CONFIRM", fontWeight = FontWeight.Black) }
+                ) { Text("CONFIRM", fontWeight = FontWeight.Black, color = Color.White) }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.onDismissDoubleDoseWarning() }) { 
-                    Text("ABORT", color = Color.White) 
+                    Text("ABORT", color = MaterialTheme.colorScheme.onSurface) 
                 }
             }
         )
@@ -247,19 +247,19 @@ fun TelemetryCard(modifier: Modifier = Modifier, label: String, value: String, u
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        color = CardDark,
+        color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(label, style = MaterialTheme.typography.labelSmall, color = TextGray, fontWeight = FontWeight.Bold)
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Text(icon, fontSize = 16.sp)
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = color)
                 Spacer(Modifier.width(4.dp))
-                Text(unit, style = MaterialTheme.typography.labelSmall, color = TextGray, modifier = Modifier.padding(bottom = 4.dp))
+                Text(unit, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
             }
         }
     }
@@ -270,7 +270,7 @@ fun SectionHeader(title: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
         Box(modifier = Modifier.size(12.dp, 2.dp).background(color))
         Spacer(Modifier.width(8.dp))
-        Text(title, style = MaterialTheme.typography.labelLarge, color = Color.White, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+        Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
     }
 }
 
@@ -315,11 +315,11 @@ fun SwipeablePaddockMedicationItem(
                 }
                 .clickable { onEdit() },
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = CardDark)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             ListItem(
-                headlineContent = { Text(medication.name.uppercase(), fontWeight = FontWeight.Black, color = Color.White) },
-                supportingContent = { Text("${medication.dosage} MG • ${medication.formattedTime()}", color = TextGray, fontWeight = FontWeight.Bold) },
+                headlineContent = { Text(medication.name.uppercase(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface) },
+                supportingContent = { Text("${medication.dosage} MG • ${medication.formattedTime()}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) },
                 leadingContent = {
                     Box(
                         modifier = Modifier.size(52.dp).clip(CircleShape)
@@ -341,17 +341,13 @@ fun SwipeablePaddockMedicationItem(
 
 @Composable
 fun CheckeredFlagCelebration() {
-    val infiniteTransition = rememberInfiniteTransition()
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 0.1f,
-        animationSpec = infiniteRepeatable(animation = tween(1000, easing = LinearEasing), repeatMode = RepeatMode.Reverse)
-    )
+    val onBg = MaterialTheme.colorScheme.onBackground
     Box(modifier = Modifier.fillMaxSize().drawBehind {
         val size = 40.dp.toPx()
-        for (x in 0..20) for (y in 0..40) if ((x + y) % 2 == 0) drawRect(color = Color.White.copy(alpha = 0.03f), topLeft = Offset(x * size, y * size), size = androidx.compose.ui.geometry.Size(size, size))
+        for (x in 0..20) for (y in 0..40) if ((x + y) % 2 == 0) drawRect(color = onBg.copy(alpha = 0.03f), topLeft = Offset(x * size, y * size), size = androidx.compose.ui.geometry.Size(size, size))
     }, contentAlignment = Alignment.BottomCenter) {
         Surface(modifier = Modifier.padding(bottom = 32.dp), color = RacingTeal, shape = RoundedCornerShape(8.dp)) {
-            Text("P1 - SESSION COMPLETE 🏁", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontWeight = FontWeight.Black, color = DeepPaddock, letterSpacing = 2.sp)
+            Text("P1 - SESSION COMPLETE 🏁", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontWeight = FontWeight.Black, color = Color.Black, letterSpacing = 2.sp)
         }
     }
 }

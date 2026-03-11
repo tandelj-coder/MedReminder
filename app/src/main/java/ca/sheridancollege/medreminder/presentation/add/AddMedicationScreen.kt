@@ -53,7 +53,7 @@ fun AddMedicationScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DeepPaddock)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Racing Ambient Glow
         Box(
@@ -74,14 +74,14 @@ fun AddMedicationScreen(
                         Text(
                             if (medicationId == 0) "NEW ENTRY" else "EDIT ENTRY", 
                             style = MaterialTheme.typography.labelLarge, 
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             letterSpacing = 2.sp,
                             fontWeight = FontWeight.Black
                         ) 
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = MaterialTheme.colorScheme.onBackground)
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
@@ -128,7 +128,7 @@ fun AddMedicationScreen(
 
                 // Day Selector (Racing Chips)
                 Column {
-                    Text("FREQUENCY", style = MaterialTheme.typography.labelSmall, color = TextGray, fontWeight = FontWeight.Bold)
+                    Text("FREQUENCY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
@@ -144,11 +144,11 @@ fun AddMedicationScreen(
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = F1Red,
                                     selectedLabelColor = Color.White,
-                                    labelColor = TextGray,
-                                    containerColor = CardDark
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    containerColor = MaterialTheme.colorScheme.surface
                                 ),
                                 border = FilterChipDefaults.filterChipBorder(
-                                    borderColor = if (isSelected) Color.Transparent else GlassBorder,
+                                    borderColor = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                                     enabled = true,
                                     selected = isSelected
                                 )
@@ -210,24 +210,24 @@ fun RacingTextField(
     error: String? = null
 ) {
     Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = TextGray, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         TextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = TextGray.copy(alpha = 0.5f)) },
+            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, if (error != null) F1Red else GlassBorder, RoundedCornerShape(12.dp)),
+                .border(1.dp, if (error != null) F1Red else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = CardDark,
-                unfocusedContainerColor = CardDark,
-                disabledContainerColor = CardDark,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.surface,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 cursorColor = F1Red,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             ),
             shape = RoundedCornerShape(12.dp),
             singleLine = singleLine,
@@ -247,20 +247,20 @@ fun RacingTextField(
 @Composable
 fun RacingSelector(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
     Column(modifier = Modifier.clickable { onClick() }) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = TextGray, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            color = CardDark,
-            border = BorderStroke(1.dp, GlassBorder)
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(value, style = MaterialTheme.typography.bodyLarge, color = Color.White, fontWeight = FontWeight.Black)
+                Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Black)
                 Icon(icon, null, tint = F1Red, modifier = Modifier.size(20.dp))
             }
         }

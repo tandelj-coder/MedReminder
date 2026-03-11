@@ -54,6 +54,11 @@ val OnSecondaryLight = Color.Black
 val SecondaryContainerLight = Color(0xFF70F7E7)
 val OnSecondaryContainerLight = Color(0xFF00201C)
 
+val TertiaryLight = F1Orange
+val OnTertiaryLight = Color.Black
+val TertiaryContainerLight = Color(0xFFFFDDB3)
+val OnTertiaryContainerLight = Color(0xFF633B00)
+
 val BackgroundLight = Color(0xFFF1F2F3)
 val OnBackgroundLight = PaddockBlack
 val SurfaceLight = Color.White
