@@ -69,57 +69,18 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Streak banner
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.12f)
-                    )
+                // Test Notification button
+                OutlinedButton(
+                    onClick = { viewModel.sendTestNotification(context) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text("🔥", fontSize = 28.sp)
-                            Column {
-                                Text(
-                                    "${uiState.streakCount} Day Streak",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    if (uiState.streakCount == 0) "Start your streak today!"
-                                    else "Keep it up!",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.75f)
-                                )
-                            }
-                        }
-                        // 7-day dots
-                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            repeat(7) { i ->
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(androidx.compose.foundation.shape.CircleShape)
-                                        .background(
-                                            if (i < uiState.streakCount.coerceAtMost(7))
-                                                Color(0xFF00BCD4)
-                                            else
-                                                Color.White.copy(alpha = 0.25f)
-                                        )
-                                )
-                            }
-                        }
-                    }
+                    Icon(Icons.Default.Notifications, null,
+                        modifier = Modifier.size(18.dp), tint = Color.White)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Test Notification", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

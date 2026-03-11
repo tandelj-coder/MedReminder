@@ -2,6 +2,7 @@ package ca.sheridancollege.medreminder.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -11,7 +12,8 @@ import androidx.room.PrimaryKey
         parentColumns = ["id"],
         childColumns = ["medicationId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
+    indices = [Index(value = ["medicationId"])]
 )
 data class IntakeLogEntity(
     @PrimaryKey(autoGenerate = true)
