@@ -25,6 +25,8 @@ import ca.sheridancollege.medreminder.presentation.history.HistoryScreen
 import ca.sheridancollege.medreminder.presentation.settings.ProfileDetailScreen
 import ca.sheridancollege.medreminder.presentation.settings.SettingsScreen
 import ca.sheridancollege.medreminder.presentation.today.TodayScreen
+import ca.sheridancollege.medreminder.presentation.emergency.EmergencyScreen
+import androidx.compose.material.icons.filled.Emergency
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Login : Screen("login", "Login", Icons.Default.Home)
@@ -35,9 +37,10 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object ProfileDetail : Screen("profile_detail", "Profile", Icons.Default.Settings)
     object Edit : Screen("edit/{medicationId}", "Edit", Icons.Default.Add)
+    object Emergency : Screen("emergency", "Emergency", Icons.Default.Emergency)
 }
 
-val bottomNavItems = listOf(Screen.Today, Screen.Add, Screen.History, Screen.Settings)
+val bottomNavItems = listOf(Screen.Today, Screen.Add, Screen.History, Screen.Emergency, Screen.Settings)
 
 @Composable
 fun AppNavigation(
@@ -129,6 +132,7 @@ fun AppNavigation(
             }
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Emergency.route) { EmergencyScreen() }
             composable(Screen.ProfileDetail.route) {
                 ProfileDetailScreen(
                     onNavigateBack = { navController.popBackStack() }
