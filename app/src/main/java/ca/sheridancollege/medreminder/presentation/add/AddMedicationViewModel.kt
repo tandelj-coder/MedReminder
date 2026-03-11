@@ -7,7 +7,7 @@ import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.domain.usecase.AddMedicationUseCase
-import ca.sheridancollege.medreminder.worker.MedicationReminderWorker
+import ca.sheridancollege.medreminder.worker.MedicationAlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,7 +100,7 @@ class AddMedicationViewModel @Inject constructor(
                 repository.updateMedication(medication)
             } else {
                 val id = addMedication(medication)
-                MedicationReminderWorker.schedule(
+                MedicationAlarmScheduler.schedule(
                     context = context,
                     medicationId = id.toInt(),
                     medicationName = medication.name,

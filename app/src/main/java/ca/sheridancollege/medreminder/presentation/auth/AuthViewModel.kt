@@ -110,6 +110,25 @@ class AuthViewModel @Inject constructor(
     fun signOut() {
         viewModelScope.launch {
             authRepository.signOut()
+            _state.update { AuthState() }
+        }
+    }
+
+    fun deleteAccount(
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        _state.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            authRepository.deleteAccount()
+                .onSuccess {
+                    _state.update { AuthState() }
+                    onSuccess()
+                }
+                .onFailure { e ->
+                    _state.update { it.copy(isLoading = false, error = e.message) }
+                    onError(e.message ?: "Failed to delete account")
+                }
         }
     }
 }

@@ -15,7 +15,9 @@ data class SettingsUiState(
     val darkTheme: Boolean = false,
     val streakCount: Int = 0,
     val showResetConfirm: Boolean = false,
-    val resetDone: Boolean = false
+    val showDeleteAccountConfirm: Boolean = false,
+    val resetDone: Boolean = false,
+    val isDeleting: Boolean = false
 )
 
 @HiltViewModel
@@ -24,7 +26,7 @@ class SettingsViewModel @Inject constructor(
     private val repository: MedicationRepository
 ) : ViewModel() {
 
-    private val _extra = MutableStateFlow(Pair(false, false)) // showConfirm, resetDone
+    private val _extra = MutableStateFlow(Triple(false, false, false)) // showConfirm, resetDone, showDeleteConfirm
 
     val uiState: StateFlow<SettingsUiState> = combine(
         dataStore.notificationsEnabled,
@@ -39,7 +41,8 @@ class SettingsViewModel @Inject constructor(
             darkTheme = dark,
             streakCount = streak,
             showResetConfirm = extra.first,
-            resetDone = extra.second
+            resetDone = extra.second,
+            showDeleteAccountConfirm = extra.third
         )
     }.stateIn(
         scope = viewModelScope,
@@ -52,33 +55,29 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setSnoozeMinutes(minutes: Int) {
-        viewModelScope.launch { dataStore.setSnoozeMinutes(minutes) }
+        viewModelScope.launch { dataStore.setSnoozeMinutes(minutes.coerceIn(5, 60)) }
     }
 
     fun setDarkTheme(enabled: Boolean) {
         viewModelScope.launch { dataStore.setDarkTheme(enabled) }
     }
 
-    fun onResetAllRequested() {
-        _extra.value = Pair(true, false)
-    }
-
-    fun onResetAllDismissed() {
-        _extra.value = Pair(false, false)
-    }
+    // ── Reset All Data ──────────────────────────────────────────────
+    fun onResetAllRequested() { _extra.value = Triple(true, false, false) }
+    fun onResetAllDismissed() { _extra.value = Triple(false, false, false) }
 
     fun onResetAllConfirmed() {
         viewModelScope.launch {
-            // Delete all medications (cascade deletes logs too)
             val allMeds = repository.getAllActiveMedications().first()
             allMeds.forEach { repository.deleteMedication(it) }
-            // Reset streak and preferences
             dataStore.resetStreak()
-            _extra.value = Pair(false, true)
+            _extra.value = Triple(false, true, false)
         }
     }
 
-    fun onResetDoneDismissed() {
-        _extra.value = Pair(false, false)
-    }
+    fun onResetDoneDismissed() { _extra.value = Triple(false, false, false) }
+
+    // ── Delete Account ──────────────────────────────────────────────
+    fun onDeleteAccountRequested() { _extra.value = Triple(false, false, true) }
+    fun onDeleteAccountDismissed() { _extra.value = Triple(false, false, false) }
 }

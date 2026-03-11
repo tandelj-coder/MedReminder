@@ -166,6 +166,24 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun deleteAccount(): Result<Unit> {
+        return try {
+            val user = firebaseAuth.currentUser ?: throw Exception("No user logged in")
+            val uid = user.uid
+            // Delete all Firestore data
+            val medsRef = firestore.collection("users").document(uid).collection("medications").get().await()
+            for (doc in medsRef.documents) { doc.reference.delete().await() }
+            firestore.collection("users").document(uid).delete().await()
+            // Delete Firebase Auth account
+            user.delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+
     override suspend fun signOut() {
         firebaseAuth.signOut()
     }

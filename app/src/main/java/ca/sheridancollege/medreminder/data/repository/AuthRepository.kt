@@ -10,5 +10,6 @@ interface AuthRepository {
     suspend fun signInWithEmail(email: String, password: String): Result<User>
     suspend fun updateProfile(user: User): Result<Unit>
     suspend fun signOut()
+    suspend fun deleteAccount(): Result<Unit>
     fun isUserSignedIn(): Boolean
 }

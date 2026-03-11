@@ -7,21 +7,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import ca.sheridancollege.medreminder.presentation.auth.AuthViewModel
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(
@@ -228,7 +235,109 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+
+        // Delete Account section
+        SettingsSectionHeader("Account", color = MaterialTheme.colorScheme.error)
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(Icons.Default.PersonOff, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(22.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Delete Account", style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        Text("Permanently removes your account, all medications, history and data from Firebase",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer)
+                    }
+                }
+                Button(
+                    onClick = { viewModel.onDeleteAccountRequested() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.DeleteForever, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Delete My Account", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
         Spacer(Modifier.height(100.dp))
+    }
+
+    // Reset confirm dialog
+    if (uiState.showResetConfirm) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onResetAllDismissed() },
+            icon = { Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Reset All Data?") },
+            text = { Text("This will delete all medications, history and reset your streak. This cannot be undone.") },
+            confirmButton = {
+                Button(onClick = { viewModel.onResetAllConfirmed() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Reset Everything") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { viewModel.onResetAllDismissed() }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Delete account confirm dialog
+    if (uiState.showDeleteAccountConfirm) {
+        var isDeleting by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = { if (!isDeleting) viewModel.onDeleteAccountDismissed() },
+            icon = { Icon(Icons.Default.PersonOff, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp)) },
+            title = { Text("Delete Account?", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("This will PERMANENTLY delete:", fontWeight = FontWeight.SemiBold)
+                    Text("• Your Firebase account")
+                    Text("• All medications and history")
+                    Text("• All Firestore data")
+                    Text("• Your streak and preferences")
+                    Spacer(Modifier.height(4.dp))
+                    Text("This action cannot be undone.", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isDeleting = true
+                        authViewModel.deleteAccount(
+                            onSuccess = { viewModel.onDeleteAccountDismissed() },
+                            onError = { isDeleting = false }
+                        )
+                    },
+                    enabled = !isDeleting,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    if (isDeleting) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("Yes, Delete Forever", fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { viewModel.onDeleteAccountDismissed() }, enabled = !isDeleting) { Text("Cancel") }
+            }
+        )
     }
 }
 
