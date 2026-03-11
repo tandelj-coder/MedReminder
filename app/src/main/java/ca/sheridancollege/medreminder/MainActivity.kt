@@ -72,7 +72,12 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (NfcAdapter.ACTION_TAG_DISCOVERED == intent.action) {
-            val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+            val tag: Tag? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+            }
             tag?.let {
                 val tagId = it.id.joinToString("") { byte -> "%02x".format(byte) }
                 handleNfcTag(tagId)

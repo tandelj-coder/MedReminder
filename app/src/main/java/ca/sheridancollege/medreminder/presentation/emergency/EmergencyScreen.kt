@@ -57,6 +57,13 @@ fun EmergencyScreen(viewModel: EmergencyViewModel = hiltViewModel()) {
         }
     }
 
+    // Auto-fetch nearest hospitals when screen opens
+    LaunchedEffect(Unit) {
+        if (uiState.nearbyHospitals.isEmpty()) {
+            viewModel.findNearbyHospitals(context)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -104,12 +111,16 @@ fun EmergencyScreen(viewModel: EmergencyViewModel = hiltViewModel()) {
                 )
                 QuickActionCard(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.LocalHospital,
-                    label = "Call Hospital",
+                    icon = if (uiState.isLoadingHospitals) Icons.Default.HourglassEmpty
+                           else Icons.Default.LocalHospital,
+                    label = uiState.nearbyHospitals.firstOrNull()
+                        ?.name?.split(" ")?.take(2)?.joinToString(" ")
+                        ?: if (uiState.isLoadingHospitals) "Finding..." else "Hospital",
                     color = Color(0xFF1565C0),
                     onClick = {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:+16476447200"))
-                        context.startActivity(intent)
+                        val number = uiState.nearbyHospitals.firstOrNull()
+                            ?.phone?.ifBlank { null } ?: "911"
+                        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")))
                     }
                 )
                 QuickActionCard(
