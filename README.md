@@ -1,38 +1,38 @@
-# MedReminder 💊
+# MedReminder Paddock 💊🏎️
 
-An Android medication reminder app built with **Kotlin** and **Jetpack Compose**, focused on solving a real health safety problem — accidental double-dosing.
+An Android medication management platform built with **Kotlin** and **Jetpack Compose**, featuring a high-octane **Racing-inspired UI** and robust security.
 
-> Built as a personal project to demonstrate Android architecture skills for co-op applications.
-
----
-
-## The Problem
-
-Most reminder apps let you tap a button to mark a dose as taken. That's it. No confirmation, no safety check — making it easy to accidentally confirm twice, or re-take a dose too soon after the first.
-
-MedReminder adds two layers of protection:
-- **Swipe-to-confirm** instead of tap — requires deliberate intent
-- **Double-dose warning** — detects if the same medication was taken within the last 2 hours and forces an explicit second confirmation
+> Built as a personal project to demonstrate advanced Android architecture, cloud synchronization, and hardware integration.
 
 ---
 
-## Screenshots
+## 🚀 Key Innovation: "Racing Towards Health"
 
-> _Add screenshots here after running on device_
+MedReminder transforms boring medication logs into a high-performance **Telemetry Dashboard**. Using a hybrid design of **Material 3 Expressive** components and a **F1 Paddock aesthetic**, users track their "Pit Stops" (doses) and "Laps" (completion) with professional precision.
+
+### Unique Hardware Features:
+- 📲 **NFC "Tap-to-Log"** — Stick an NFC tag on your pill bottle. Tapping your phone logs your dose instantly without even opening the app.
+- 📉 **Automatic Refill Tracking** — The app calculates your remaining stock and provides "Low Fuel" warnings when you need a refill.
+- 💊 **Visual Pill Builder** — Choose your pill's color and shape (Round, Capsule, Oval) to visually verify you're taking the right dose.
+
+---
+
+## 🔐 Security & Cloud
+
+- **Multi-Account Authentication** — Secure login via **Google Sign-In** or Email/Password.
+- **Cloud Synchronization** — Every dose, medication, and profile detail is backed up in real-time to **Firebase Firestore**.
+- **User Telemetry** — Tracks personal health metrics including Height, Weight, and medical conditions for a personalized experience.
 
 ---
 
 ## Features
 
-- 📅 **Today Screen** — see all medications scheduled for today with taken/pending status
-- 💊 **Add Medication** — name, dosage, scheduled time, repeat days
-- 🔔 **Push Notifications** — scheduled reminders via WorkManager, survive device reboots
-- ⚠️ **Double-Dose Warning** — hard dialog if same med taken within 2 hours
-- 👆 **Swipe-to-Confirm** — prevents accidental taps
-- 📊 **Adherence Stats** — taken vs scheduled count, streak tracking
-- 🕓 **Intake History** — timestamped log of all doses with on-time tracking
-- 🌙 **Dark Mode** — full Material 3 dark theme support
-- ⚙️ **Settings** — notifications toggle, snooze duration, daily reset time
+- 📅 **Session Dashboard** — Real-time **Countdown Timer** to your next dose based on system clock.
+- 👆 **Paddock Interaction** — Swipe-to-confirm dosage prevents accidental logging.
+- ⚠️ **Double-Dose Prevention** — Intelligent safety checks prevent taking the same medication within a 2-hour window.
+- 📊 **Streak Telemetry** — High-contrast flame tracking for your daily adherence streaks.
+- 🕓 **Logbook** — A detailed racing history of every dose taken, timestamped and categorized.
+- 🌙 **Midnight Glass UI** — Premium glassmorphic elements combined with a deep black racing theme.
 
 ---
 
@@ -40,15 +40,15 @@ MedReminder adds two layers of protection:
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| Architecture | MVVM + Repository Pattern |
-| DI | Hilt (Dagger) |
-| Database | Room |
-| Preferences | DataStore |
-| Background Work | WorkManager |
-| Async | Kotlin Coroutines + Flow |
-| Testing | JUnit 4, MockK, Turbine |
+| **Language** | Kotlin (1.9+) |
+| **UI** | Jetpack Compose + Material 3 Expressive |
+| **Architecture** | Clean Architecture (MVVM + Repository + UseCases) |
+| **Backend** | Firebase Auth + Firebase Firestore |
+| **DI** | Hilt (Dagger) |
+| **Database** | Room (Local Caching) |
+| **Background** | WorkManager (Reliable Notifications) |
+| **NFC** | Android NFC Foreground Dispatch |
+| **Images** | Coil (Async Profile Loading) |
 
 ---
 
@@ -57,84 +57,36 @@ MedReminder adds two layers of protection:
 ```
 app/
 ├── data/
-│   ├── local/          # Room entities, DAOs, Database
-│   ├── datastore/      # UserPreferencesDataStore
-│   └── repository/     # Repository implementation
-├── di/                 # Hilt modules (Database, Repository, Worker)
+│   ├── local/          # Room Database & Local Caching
+│   ├── datastore/      # User Preferences (Theme, Notifications)
+│   └── repository/     # Auth, Firestore Sync, and Medication Logic
 ├── domain/
-│   ├── model/          # Medication, IntakeLog, AdherenceStats
-│   └── usecase/        # Business logic use cases
+│   ├── model/          # User, Medication, IntakeLog models
+│   └── usecase/        # Independent Business Logic
 ├── presentation/
-│   ├── today/          # Today screen + ViewModel
-│   ├── add/            # Add medication screen + ViewModel
-│   ├── history/        # Intake history screen + ViewModel
-│   └── settings/       # Settings screen + ViewModel
-├── worker/             # MedicationReminderWorker, DailyResetWorker
-└── navigation/         # AppNavigation (NavHost)
-```
-
-**Key design decisions:**
-- Use cases encapsulate all business logic — ViewModels only call use cases, never the repository directly
-- `MarkAsTakenUseCase` returns a sealed class (`Success`, `DoubleDoseWarning`, `AlreadyTaken`) — the ViewModel reacts to each case
-- `StateFlow` drives all UI state — single source of truth per screen
-
----
-
-## Key Use Cases
-
-### Double-Dose Prevention
-```kotlin
-sealed class MarkAsTakenResult {
-    object Success : MarkAsTakenResult()
-    data class DoubleDoseWarning(
-        val medication: Medication,
-        val lastTakenAt: Long,
-        val minutesSinceLastDose: Long
-    ) : MarkAsTakenResult()
-    object AlreadyTaken : MarkAsTakenResult()
-}
-```
-
-When a user marks a medication as taken, the app checks the last intake timestamp. If taken within 120 minutes, it returns `DoubleDoseWarning` instead of logging — requiring explicit confirmation before proceeding.
-
----
-
-## Testing
-
-12 unit tests across 3 test classes:
-
-| Test Class | What it tests |
-|-----------|--------------|
-| `MarkAsTakenUseCaseTest` | Success, AlreadyTaken, DoubleDoseWarning, forceConfirm |
-| `CheckDoubleDoseUseCaseTest` | 2-hour window logic, null handling, timing accuracy |
-| `TodayViewModelTest` | StateFlow emissions, snackbar, warning state, dismiss |
-
-```bash
-./gradlew test
+│   ├── auth/           # Login, Sign Up, Profile Onboarding
+│   ├── today/          # Racing Dashboard & Live Timer
+│   ├── history/        # Logbook Telemetry
+│   └── settings/       # Account & App Configuration
+├── worker/             # Background Reminders & Daily Resets
+└── navigation/         # Type-safe Jetpack Navigation
 ```
 
 ---
 
 ## How to Run
 
-1. Clone the repo
-2. Open in Android Studio Hedgehog or later
-3. Run on emulator or physical device (API 26+)
-
-```bash
-git clone https://github.com/tandelj-coder/MedReminder.git
-cd MedReminder
-./gradlew assembleDebug
-```
-
----
-
-## What I Learned
-
-- Structuring a multi-layer Android app with clean architecture from scratch
-- Using Hilt for dependency injection across ViewModels, Workers, and Repositories
-- Testing coroutine-based ViewModels with `StandardTestDispatcher` and Turbine
-- WorkManager constraints and `BootReceiver` for reliable background scheduling
+1.  **Firebase Setup**:
+    -   Create a Firebase project.
+    -   Enable Google Auth and Firestore.
+    -   Add your SHA-1 to the Firebase project settings.
+    -   Download `google-services.json` and place it in the `app/` directory.
+2.  **Clone & Build**:
+    ```bash
+    git clone https://github.com/tandelj-coder/MedReminder.git
+    cd MedReminder
+    ./gradlew assembleDebug
+    ```
 
 ---
 
