@@ -6,6 +6,7 @@ import ca.sheridancollege.medreminder.data.repository.DoseEventRepository
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.domain.model.AdherenceStats
 import ca.sheridancollege.medreminder.domain.model.DoseEvent
+import ca.sheridancollege.medreminder.domain.model.DoseStatus
 import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.domain.usecase.DeleteMedicationUseCase
 import ca.sheridancollege.medreminder.domain.usecase.GetAdherenceStatsUseCase
@@ -71,7 +72,7 @@ class TodayViewModel @Inject constructor(
     private fun loadLowStockMeds() {
         viewModelScope.launch {
             medicationRepository.getAllActiveMedications().collect { meds ->
-                val lowStock = meds.filter { it.remainingQuantity <= it.refillThreshold }
+                val lowStock = meds.filter { it.stockQuantity > 0 && it.remainingQuantity <= it.refillThreshold }
                 _uiState.update { it.copy(lowStockMedications = lowStock) }
             }
         }
@@ -176,12 +177,14 @@ class TodayViewModel @Inject constructor(
                 }
             }
 
+            val now = System.currentTimeMillis()
             val cal = Calendar.getInstance().apply { timeInMillis = doseEvent.scheduledTime }
             medicationRepository.markAsTaken(
-                medicationId = doseEvent.medicationId,
-                timestamp = System.currentTimeMillis(),
-                scheduledHour = cal.get(Calendar.HOUR_OF_DAY),
-                scheduledMinute = cal.get(Calendar.MINUTE)
+                medicationId   = doseEvent.medicationId,
+                timestamp      = now,
+                scheduledHour  = cal.get(Calendar.HOUR_OF_DAY),
+                scheduledMinute = cal.get(Calendar.MINUTE),
+                doseEventId    = doseEvent.id
             )
 
             _uiState.update {
@@ -195,12 +198,7 @@ class TodayViewModel @Inject constructor(
 
     fun onSkipDose(doseEvent: DoseEvent) {
         viewModelScope.launch {
-            val cal = Calendar.getInstance().apply { timeInMillis = doseEvent.scheduledTime }
-            medicationRepository.markAsSkipped(
-                medicationId = doseEvent.medicationId,
-                scheduledHour = cal.get(Calendar.HOUR_OF_DAY),
-                scheduledMinute = cal.get(Calendar.MINUTE)
-            )
+            doseEventRepository.updateDoseStatus(doseEvent.id, DoseStatus.SKIPPED)
             _uiState.update { it.copy(snackbarMessage = "${doseEvent.medicationName} skipped") }
         }
     }

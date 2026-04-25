@@ -15,8 +15,6 @@ import ca.sheridancollege.medreminder.domain.model.PillShape
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
@@ -40,14 +38,10 @@ class MedicationRepositoryImpl @Inject constructor(
             list.map { it.toDomain() }
         }
 
-    override fun getMedicationsForDay(dayCode: String): Flow<List<Medication>> {
-        val (startOfDay, endOfDay) = todayRange()
-        return medicationDao.getMedicationsForDay(dayCode)
-            .combine(intakeLogDao.getLogsForDay(startOfDay, endOfDay)) { meds, logs ->
-                // Note: Simplified as-is. With multiple times, this logic needs to be more granular.
-                meds.map { entity -> entity.toDomain() }
-            }
-    }
+    override fun getMedicationsForDay(dayCode: String): Flow<List<Medication>> =
+        medicationDao.getMedicationsForDay(dayCode).map { meds ->
+            meds.map { entity -> entity.toDomain() }
+        }
 
     override fun getTakenCountToday(): Flow<Int> {
         val (startOfDay, endOfDay) = todayRange()
@@ -68,7 +62,7 @@ class MedicationRepositoryImpl @Inject constructor(
         try {
             firestoreSyncRepository.uploadMedication(finalMedication)
             medicationDao.update(finalMedication.toEntity().copy(isSynced = true))
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
         return id
     }
 
@@ -79,7 +73,7 @@ class MedicationRepositoryImpl @Inject constructor(
         try {
             firestoreSyncRepository.uploadMedication(updatedMedication)
             medicationDao.update(updatedMedication.toEntity().copy(isSynced = true))
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     override suspend fun deleteMedication(medication: Medication) {
@@ -93,7 +87,8 @@ class MedicationRepositoryImpl @Inject constructor(
         medicationId: Int,
         timestamp: Long,
         scheduledHour: Int,
-        scheduledMinute: Int
+        scheduledMinute: Int,
+        doseEventId: Int?
     ) {
         val entity = medicationDao.getMedicationById(medicationId) ?: return
 
@@ -123,29 +118,31 @@ class MedicationRepositoryImpl @Inject constructor(
         )
         intakeLogDao.insert(log.toEntity().copy(isSynced = false))
 
-        markDoseEventAsTaken(medicationId, timestamp, scheduledHour, scheduledMinute)
-        
+        if (doseEventId != null) {
+            doseEventRepository.markDoseAsTaken(doseEventId, timestamp)
+        } else {
+            markDoseEventAsTaken(medicationId, timestamp, scheduledHour, scheduledMinute)
+        }
+
         try {
             firestoreSyncRepository.uploadIntakeLog(log)
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     private suspend fun markDoseEventAsTaken(medicationId: Int, takenAt: Long, hour: Int, minute: Int) {
         val (startOfDay, endOfDay) = todayRange()
         try {
-            val doseEvent = doseEventRepository
+            val events = doseEventRepository
                 .getDoseEventsForMedicationOnDay(medicationId, startOfDay, endOfDay)
-                .map { events -> 
-                    events.firstOrNull { event ->
-                        val cal = Calendar.getInstance().apply { timeInMillis = event.scheduledTime }
-                        event.isScheduled() && cal.get(Calendar.HOUR_OF_DAY) == hour && cal.get(Calendar.MINUTE) == minute
-                    }
-                }
-                .filterNotNull()
                 .first()
-
+            val doseEvent = events.firstOrNull { event ->
+                val cal = Calendar.getInstance().apply { timeInMillis = event.scheduledTime }
+                event.isScheduled() &&
+                    cal.get(Calendar.HOUR_OF_DAY) == hour &&
+                    cal.get(Calendar.MINUTE) == minute
+            } ?: return
             doseEventRepository.markDoseAsTaken(doseEvent.id, takenAt)
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     override suspend fun markAsSkipped(
@@ -155,19 +152,17 @@ class MedicationRepositoryImpl @Inject constructor(
     ) {
         val (startOfDay, endOfDay) = todayRange()
         try {
-            val doseEvent = doseEventRepository
+            val events = doseEventRepository
                 .getDoseEventsForMedicationOnDay(medicationId, startOfDay, endOfDay)
-                .map { events ->
-                    events.firstOrNull { event ->
-                        val cal = Calendar.getInstance().apply { timeInMillis = event.scheduledTime }
-                        event.isScheduled() && cal.get(Calendar.HOUR_OF_DAY) == scheduledHour && cal.get(Calendar.MINUTE) == scheduledMinute
-                    }
-                }
-                .filterNotNull()
                 .first()
-
+            val doseEvent = events.firstOrNull { event ->
+                val cal = Calendar.getInstance().apply { timeInMillis = event.scheduledTime }
+                event.isScheduled() &&
+                    cal.get(Calendar.HOUR_OF_DAY) == scheduledHour &&
+                    cal.get(Calendar.MINUTE) == scheduledMinute
+            } ?: return
             doseEventRepository.updateDoseStatus(doseEvent.id, DoseStatus.SKIPPED)
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     override suspend fun resetAllDailyStatus() {

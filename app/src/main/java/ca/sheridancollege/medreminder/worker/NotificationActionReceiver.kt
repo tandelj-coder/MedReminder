@@ -10,6 +10,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -40,11 +41,23 @@ class NotificationActionReceiver : BroadcastReceiver() {
             ACTION_MARK_TAKEN -> {
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
+                        var effectiveHour = hour
+                        var effectiveMinute = minute
+                        if (doseId != 0 && (effectiveHour < 0 || effectiveMinute < 0)) {
+                            val event = doseEventRepository.getDoseEventById(doseId)
+                            if (event != null) {
+                                val cal = Calendar.getInstance().apply { timeInMillis = event.scheduledTime }
+                                effectiveHour = cal.get(Calendar.HOUR_OF_DAY)
+                                effectiveMinute = cal.get(Calendar.MINUTE)
+                            }
+                        }
+                        if (effectiveHour < 0 || effectiveMinute < 0) return@launch
                         repository.markAsTaken(
-                            medicationId = medId,
-                            timestamp = System.currentTimeMillis(),
-                            scheduledHour = hour,
-                            scheduledMinute = minute
+                            medicationId    = medId,
+                            timestamp       = System.currentTimeMillis(),
+                            scheduledHour   = effectiveHour,
+                            scheduledMinute = effectiveMinute,
+                            doseEventId     = doseId.takeIf { it != 0 }
                         )
                     } catch (e: Exception) {
                         e.printStackTrace()
