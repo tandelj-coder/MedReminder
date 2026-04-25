@@ -72,7 +72,7 @@ class TodayViewModel @Inject constructor(
     private fun loadLowStockMeds() {
         viewModelScope.launch {
             medicationRepository.getAllActiveMedications().collect { meds ->
-                val lowStock = meds.filter { it.remainingQuantity <= it.refillThreshold }
+                val lowStock = meds.filter { it.stockQuantity > 0 && it.remainingQuantity <= it.refillThreshold }
                 _uiState.update { it.copy(lowStockMedications = lowStock) }
             }
         }

@@ -139,6 +139,14 @@ fun AddMedicationScreen(
             }
 
             MedTextField(
+                value         = uiState.stockQuantity,
+                onValueChange = viewModel::onStockQuantityChange,
+                label         = "Pill count (optional)",
+                placeholder   = "e.g. 30",
+                keyboardType  = androidx.compose.ui.text.input.KeyboardType.Number
+            )
+
+            MedTextField(
                 value         = uiState.notes,
                 onValueChange = viewModel::onNotesChange,
                 label         = "Notes (optional)",
@@ -261,7 +269,8 @@ fun MedTextField(
     label         : String,
     placeholder   : String,
     singleLine    : Boolean = true,
-    error         : String? = null
+    error         : String? = null,
+    keyboardType  : androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
@@ -278,10 +287,11 @@ fun MedTextField(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             },
-            modifier   = Modifier.fillMaxWidth(),
-            shape      = RoundedCornerShape(12.dp),
-            singleLine = singleLine,
-            isError    = error != null
+            modifier      = Modifier.fillMaxWidth(),
+            shape         = RoundedCornerShape(12.dp),
+            singleLine    = singleLine,
+            isError       = error != null,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboardType)
         )
         if (error != null) {
             Text(error, style = MaterialTheme.typography.bodySmall,
