@@ -17,7 +17,8 @@ import javax.inject.Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
-    private val firestoreSyncRepository: FirestoreSyncRepository
+    private val firestoreSyncRepository: FirestoreSyncRepository,
+    private val medicationRepository: MedicationRepository
 ) : AuthRepository {
 
     override val currentUser: Flow<User?> = callbackFlow {
@@ -54,7 +55,6 @@ class AuthRepositoryImpl @Inject constructor(
                         }
                         trySend(user)
                     }
-                // Note: In a production app, you'd manage this listener better
             }
         }
         firebaseAuth.addAuthStateListener(authStateListener)
@@ -92,6 +92,10 @@ class AuthRepositoryImpl @Inject constructor(
                 firestoreSyncRepository.saveUserInfo(newUser)
                 newUser
             }
+            
+            // Trigger sync on login
+            syncOnLogin()
+            
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(Exception("Google Sign-in failed. This user may already exist or there was a network error."))
@@ -144,10 +148,22 @@ class AuthRepositoryImpl @Inject constructor(
                     isProfileComplete = false
                 )
             }
+            
+            // Trigger sync on login
+            syncOnLogin()
+            
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(Exception("Invalid email or password."))
         }
+    }
+
+    private suspend fun syncOnLogin() {
+        try {
+            val remoteMeds = firestoreSyncRepository.fetchMedications()
+            val remoteLogs = firestoreSyncRepository.fetchIntakeLogs()
+            medicationRepository.syncFromRemote(remoteMeds, remoteLogs)
+        } catch (e: Exception) { }
     }
 
     override suspend fun updateProfile(user: User): Result<Unit> {
@@ -167,7 +183,6 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-
     override suspend fun deleteAccount(): Result<Unit> {
         return try {
             val user = firebaseAuth.currentUser ?: throw Exception("No user logged in")
@@ -183,7 +198,6 @@ class AuthRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-
 
     override suspend fun signOut() {
         firebaseAuth.signOut()

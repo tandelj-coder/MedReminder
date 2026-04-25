@@ -13,7 +13,7 @@ import ca.sheridancollege.medreminder.data.local.entity.MedicationEntity
 
 @Database(
     entities = [MedicationEntity::class, IntakeLogEntity::class, DoseEventEntity::class, DrugSuggestionEntity::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class MedicationDatabase : RoomDatabase() {

@@ -83,21 +83,21 @@ interface DoseEventDao {
 
     @Query("""
         UPDATE dose_events
-        SET status = :newStatus, updatedAt = :now
+        SET status = :newStatus, updatedAt = :now, isSynced = 0
         WHERE id = :id
     """)
     suspend fun updateStatus(id: Int, newStatus: String, now: Long = System.currentTimeMillis())
 
     @Query("""
         UPDATE dose_events
-        SET status = :newStatus, takenAt = :takenAt, updatedAt = :now
+        SET status = :newStatus, takenAt = :takenAt, updatedAt = :now, isSynced = 0
         WHERE id = :id
     """)
     suspend fun markAsTaken(id: Int, takenAt: Long, newStatus: String = "TAKEN", now: Long = System.currentTimeMillis())
 
     @Query("""
         UPDATE dose_events
-        SET status = 'MISSED', updatedAt = :now
+        SET status = 'MISSED', updatedAt = :now, isSynced = 0
         WHERE status = 'SCHEDULED' AND scheduledTime <= :cutoffTime
     """)
     suspend fun markOverdueAssMissed(cutoffTime: Long, now: Long = System.currentTimeMillis())
@@ -110,4 +110,17 @@ interface DoseEventDao {
 
     @Query("SELECT * FROM dose_events ORDER BY scheduledTime DESC")
     fun getAllEvents(): Flow<List<DoseEventEntity>>
+
+    @Query("SELECT * FROM dose_events WHERE isSynced = 0")
+    suspend fun getUnsyncedEvents(): List<DoseEventEntity>
+
+    @Transaction
+    suspend fun upsertFromSync(events: List<DoseEventEntity>) {
+        events.forEach { remote ->
+            val local = getById(remote.id)
+            if (local == null || remote.updatedAt > local.updatedAt) {
+                insert(remote.copy(isSynced = true))
+            }
+        }
+    }
 }

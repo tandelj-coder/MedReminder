@@ -44,5 +44,5 @@ interface DoseEventRepository {
 
     suspend fun getLastTakenEventForMedication(medicationId: Int): DoseEvent?
 
-    fun generateFutureEvents(medicationId: Int, daysAhead: Int): Result<Int>
+    suspend fun generateFutureEvents(medicationId: Int, daysAhead: Int): Result<Int>
 }

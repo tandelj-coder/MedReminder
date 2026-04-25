@@ -19,7 +19,8 @@ data class Medication(
     val remainingQuantity: Int = 0,
     val refillThreshold: Int = 5,
     // NFC Pairing
-    val nfcTagId: String? = null
+    val nfcTagId: String? = null,
+    val updatedAt: Long = System.currentTimeMillis()
 ) {
     fun formattedTime(): String {
         val hour = if (timeHour == 0) 12 else if (timeHour > 12) timeHour - 12 else timeHour

@@ -25,6 +25,8 @@ interface MedicationRepository {
     fun getLogsForDay(startOfDay: Long, endOfDay: Long): Flow<List<IntakeLog>>
     suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLog?
 
+    suspend fun syncFromRemote(medications: List<Medication>, logs: List<IntakeLog>)
+
     fun getTodayDoseEvents(startOfDay: Long, endOfDay: Long): Flow<List<DoseEvent>>
     suspend fun generateDoseEventsForToday(): Result<Int>
 }

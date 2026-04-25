@@ -19,5 +19,7 @@ data class MedicationEntity(
     val stockQuantity: Int = 0,
     val remainingQuantity: Int = 0,
     val refillThreshold: Int = 5,
-    val nfcTagId: String? = null
+    val nfcTagId: String? = null,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
 )

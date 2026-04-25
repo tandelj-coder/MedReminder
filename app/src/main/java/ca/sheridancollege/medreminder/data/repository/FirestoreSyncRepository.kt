@@ -1,6 +1,9 @@
 package ca.sheridancollege.medreminder.data.repository
 
+import ca.sheridancollege.medreminder.domain.model.DayOfWeek
+import ca.sheridancollege.medreminder.domain.model.IntakeLog
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.model.PillShape
 import ca.sheridancollege.medreminder.domain.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -42,10 +45,92 @@ class FirestoreSyncRepository @Inject constructor(
             "days" to medication.days.map { it.code },
             "notes" to medication.notes,
             "isActive" to medication.isActive,
-            "lastUpdated" to System.currentTimeMillis()
+            "pillColor" to medication.pillColor,
+            "pillShape" to medication.pillShape.name,
+            "stockQuantity" to medication.stockQuantity,
+            "remainingQuantity" to medication.remainingQuantity,
+            "refillThreshold" to medication.refillThreshold,
+            "nfcTagId" to medication.nfcTagId,
+            "updatedAt" to medication.updatedAt
         )
         
         docRef.set(data, SetOptions.merge()).await()
+    }
+
+    suspend fun uploadIntakeLog(log: IntakeLog) {
+        val uid = userId ?: return
+        val docRef = firestore.collection("users").document(uid)
+            .collection("intakeLogs").document(log.id.toString())
+
+        val data = hashMapOf(
+            "id" to log.id,
+            "medicationId" to log.medicationId,
+            "medicationName" to log.medicationName,
+            "takenAt" to log.takenAt,
+            "scheduledHour" to log.scheduledHour,
+            "scheduledMinute" to log.scheduledMinute,
+            "wasOnTime" to log.wasOnTime,
+            "snoozeReason" to log.snoozeReason,
+            "wasDoubleDoseAttempt" to log.wasDoubleDoseAttempt,
+            "updatedAt" to log.updatedAt
+        )
+
+        docRef.set(data, SetOptions.merge()).await()
+    }
+
+    suspend fun fetchMedications(): List<Medication> {
+        val uid = userId ?: return emptyList()
+        val snapshot = firestore.collection("users").document(uid)
+            .collection("medications").get().await()
+        
+        return snapshot.documents.mapNotNull { doc ->
+            try {
+                Medication(
+                    id = (doc.getLong("id") ?: 0L).toInt(),
+                    name = doc.getString("name") ?: "",
+                    dosage = doc.getString("dosage") ?: "",
+                    timeHour = (doc.getLong("timeHour") ?: 0L).toInt(),
+                    timeMinute = (doc.getLong("timeMinute") ?: 0L).toInt(),
+                    days = (doc.get("days") as? List<String>)?.mapNotNull { DayOfWeek.fromCode(it) } ?: emptyList(),
+                    isActive = doc.getBoolean("isActive") ?: true,
+                    notes = doc.getString("notes") ?: "",
+                    pillColor = doc.getString("pillColor") ?: "#2196F3",
+                    pillShape = PillShape.valueOf(doc.getString("pillShape") ?: "ROUND"),
+                    stockQuantity = (doc.getLong("stockQuantity") ?: 0L).toInt(),
+                    remainingQuantity = (doc.getLong("remainingQuantity") ?: 0L).toInt(),
+                    refillThreshold = (doc.getLong("refillThreshold") ?: 5L).toInt(),
+                    nfcTagId = doc.getString("nfcTagId"),
+                    updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    suspend fun fetchIntakeLogs(): List<IntakeLog> {
+        val uid = userId ?: return emptyList()
+        val snapshot = firestore.collection("users").document(uid)
+            .collection("intakeLogs").get().await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            try {
+                IntakeLog(
+                    id = (doc.getLong("id") ?: 0L).toInt(),
+                    medicationId = (doc.getLong("medicationId") ?: 0L).toInt(),
+                    medicationName = doc.getString("medicationName") ?: "",
+                    takenAt = doc.getLong("takenAt") ?: 0L,
+                    scheduledHour = (doc.getLong("scheduledHour") ?: 0L).toInt(),
+                    scheduledMinute = (doc.getLong("scheduledMinute") ?: 0L).toInt(),
+                    wasOnTime = doc.getBoolean("wasOnTime") ?: true,
+                    snoozeReason = doc.getString("snoozeReason") ?: "",
+                    wasDoubleDoseAttempt = doc.getBoolean("wasDoubleDoseAttempt") ?: false,
+                    updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis()
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
     }
 
     suspend fun deleteMedication(medicationId: Int) {

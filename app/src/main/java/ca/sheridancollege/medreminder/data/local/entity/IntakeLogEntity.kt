@@ -25,5 +25,7 @@ data class IntakeLogEntity(
     val scheduledMinute: Int,
     val wasOnTime: Boolean,
     val snoozeReason: String = "",
-    val wasDoubleDoseAttempt: Boolean = false
+    val wasDoubleDoseAttempt: Boolean = false,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
 )

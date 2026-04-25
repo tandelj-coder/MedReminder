@@ -28,7 +28,8 @@ data class DoseEventEntity(
     val status: String,
     val takenAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
 )
 
 enum class DoseStatus {

@@ -28,7 +28,8 @@ class DoseEventRepositoryImpl @Inject constructor(
             medicationId = medicationId,
             medicationName = medicationName,
             scheduledTime = scheduledTime,
-            status = DoseStatus.SCHEDULED.name
+            status = DoseStatus.SCHEDULED.name,
+            isSynced = false
         )
         return doseEventDao.insert(entity)
     }
@@ -113,8 +114,8 @@ class DoseEventRepositoryImpl @Inject constructor(
     override suspend fun getLastTakenEventForMedication(medicationId: Int): DoseEvent? =
         doseEventDao.getLastTakenEvent(medicationId)?.toDomain()
 
-    override suspend fun generateFutureEvents(medicationId: Int, daysAhead: Int): Result<Int> =
-        try {
+    override suspend fun generateFutureEvents(medicationId: Int, daysAhead: Int): Result<Int> {
+        return try {
             val medication = medicationDao.getMedicationById(medicationId)
                 ?: return Result.failure(Exception("Medication not found"))
 
@@ -151,6 +152,7 @@ class DoseEventRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
 
     // ─── Mappers ─────────────────────────────────────────────
 
@@ -160,6 +162,17 @@ class DoseEventRepositoryImpl @Inject constructor(
         medicationName = medicationName,
         scheduledTime = scheduledTime,
         status = DoseStatus.valueOf(status),
+        takenAt = takenAt,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+
+    private fun DoseEvent.toEntity() = DoseEventEntity(
+        id = id,
+        medicationId = medicationId,
+        medicationName = medicationName,
+        scheduledTime = scheduledTime,
+        status = status.name,
         takenAt = takenAt,
         createdAt = createdAt,
         updatedAt = updatedAt

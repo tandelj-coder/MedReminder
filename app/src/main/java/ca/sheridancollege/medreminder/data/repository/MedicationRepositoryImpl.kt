@@ -59,15 +59,30 @@ class MedicationRepositoryImpl @Inject constructor(
         medicationDao.getMedicationById(id)?.toDomain()
 
     override suspend fun insertMedication(medication: Medication): Long {
-        val id = medicationDao.insert(medication.toEntity())
-        val updatedMedication = medication.copy(id = id.toInt())
-        firestoreSyncRepository.uploadMedication(updatedMedication)
+        val medicationWithTimestamp = medication.copy(updatedAt = System.currentTimeMillis())
+        val id = medicationDao.insert(medicationWithTimestamp.toEntity().copy(isSynced = false))
+        val finalMedication = medicationWithTimestamp.copy(id = id.toInt())
+        
+        // Async sync
+        try {
+            firestoreSyncRepository.uploadMedication(finalMedication)
+            medicationDao.update(finalMedication.toEntity().copy(isSynced = true))
+        } catch (e: Exception) {
+            // Failure is okay, background sync will handle it
+        }
         return id
     }
 
     override suspend fun updateMedication(medication: Medication) {
-        medicationDao.update(medication.toEntity())
-        firestoreSyncRepository.uploadMedication(medication)
+        val updatedMedication = medication.copy(updatedAt = System.currentTimeMillis())
+        medicationDao.update(updatedMedication.toEntity().copy(isSynced = false))
+        
+        try {
+            firestoreSyncRepository.uploadMedication(updatedMedication)
+            medicationDao.update(updatedMedication.toEntity().copy(isSynced = true))
+        } catch (e: Exception) {
+            // Failure is okay
+        }
     }
 
     override suspend fun deleteMedication(medication: Medication) {
@@ -99,19 +114,23 @@ class MedicationRepositoryImpl @Inject constructor(
         }.timeInMillis
         val wasOnTime = Math.abs(timestamp - scheduled) / 60000 <= 60
 
-        intakeLogDao.insert(
-            IntakeLogEntity(
-                medicationId = medicationId,
-                medicationName = entity.name,
-                takenAt = timestamp,
-                scheduledHour = scheduledHour,
-                scheduledMinute = scheduledMinute,
-                wasOnTime = wasOnTime
-            )
+        val log = IntakeLog(
+            medicationId = medicationId,
+            medicationName = entity.name,
+            takenAt = timestamp,
+            scheduledHour = scheduledHour,
+            scheduledMinute = scheduledMinute,
+            wasOnTime = wasOnTime,
+            updatedAt = System.currentTimeMillis()
         )
+        intakeLogDao.insert(log.toEntity().copy(isSynced = false))
 
         markDoseEventAsTaken(medicationId, timestamp)
-        firestoreSyncRepository.uploadMedication(entity.toDomain())
+        
+        try {
+            firestoreSyncRepository.uploadIntakeLog(log)
+            // Ideally we'd update isSynced here, but logs don't have stable IDs yet in this simplified version
+        } catch (e: Exception) { }
     }
 
     private suspend fun markDoseEventAsTaken(medicationId: Int, takenAt: Long) {
@@ -144,6 +163,11 @@ class MedicationRepositoryImpl @Inject constructor(
 
     override suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLog? =
         intakeLogDao.getLastIntakeForMedication(medicationId)?.toDomain()
+
+    override suspend fun syncFromRemote(medications: List<Medication>, logs: List<IntakeLog>) {
+        medicationDao.upsertFromSync(medications.map { it.toEntity() })
+        intakeLogDao.upsertFromSync(logs.map { it.toEntity() })
+    }
 
     // ─── Dose Events (Phase 2 Integration) ──────────────────────────
 
@@ -192,7 +216,8 @@ class MedicationRepositoryImpl @Inject constructor(
         stockQuantity = stockQuantity,
         remainingQuantity = remainingQuantity,
         refillThreshold = refillThreshold,
-        nfcTagId = nfcTagId
+        nfcTagId = nfcTagId,
+        updatedAt = updatedAt
     )
 
     private fun Medication.toEntity() = MedicationEntity(
@@ -209,7 +234,8 @@ class MedicationRepositoryImpl @Inject constructor(
         stockQuantity = stockQuantity,
         remainingQuantity = remainingQuantity,
         refillThreshold = refillThreshold,
-        nfcTagId = nfcTagId
+        nfcTagId = nfcTagId,
+        updatedAt = updatedAt
     )
 
     private fun IntakeLogEntity.toDomain() = IntakeLog(
@@ -221,6 +247,20 @@ class MedicationRepositoryImpl @Inject constructor(
         scheduledMinute = scheduledMinute,
         wasOnTime = wasOnTime,
         snoozeReason = snoozeReason,
-        wasDoubleDoseAttempt = wasDoubleDoseAttempt
+        wasDoubleDoseAttempt = wasDoubleDoseAttempt,
+        updatedAt = updatedAt
+    )
+
+    private fun IntakeLog.toEntity() = IntakeLogEntity(
+        id = id,
+        medicationId = medicationId,
+        medicationName = medicationName,
+        takenAt = takenAt,
+        scheduledHour = scheduledHour,
+        scheduledMinute = scheduledMinute,
+        wasOnTime = wasOnTime,
+        snoozeReason = snoozeReason,
+        wasDoubleDoseAttempt = wasDoubleDoseAttempt,
+        updatedAt = updatedAt
     )
 }

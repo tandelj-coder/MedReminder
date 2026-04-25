@@ -27,4 +27,19 @@ interface MedicationDao {
 
     @Query("SELECT COUNT(*) FROM medications WHERE isActive = 1")
     fun getTotalActiveCount(): Flow<Int>
+    @Query("SELECT * FROM medications WHERE isSynced = 0")
+    suspend fun getUnsyncedMedications(): List<MedicationEntity>
+
+    @Query("SELECT * FROM medications")
+    suspend fun getAllMedicationsSync(): List<MedicationEntity>
+
+    @Transaction
+    suspend fun upsertFromSync(medications: List<MedicationEntity>) {
+        medications.forEach { remote ->
+            val local = getMedicationById(remote.id)
+            if (local == null || remote.updatedAt > local.updatedAt) {
+                insert(remote.copy(isSynced = true))
+            }
+        }
+    }
 }
