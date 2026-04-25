@@ -41,10 +41,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         repository.markAsTaken(
-                            medicationId = medId,
-                            timestamp = System.currentTimeMillis(),
-                            scheduledHour = hour,
-                            scheduledMinute = minute
+                            medicationId    = medId,
+                            timestamp       = System.currentTimeMillis(),
+                            scheduledHour   = hour,
+                            scheduledMinute = minute,
+                            doseEventId     = doseId.takeIf { it != 0 }
                         )
                     } catch (e: Exception) {
                         e.printStackTrace()
