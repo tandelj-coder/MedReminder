@@ -63,6 +63,7 @@ class AddMedicationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AddMedicationUiState())
     val uiState: StateFlow<AddMedicationUiState> = _uiState.asStateFlow()
     private var editingId: Int = 0
+    private var existingRemainingQuantity: Int = 0
     private var searchJob: Job? = null
 
     fun loadMedication(id: Int) {
@@ -70,6 +71,7 @@ class AddMedicationViewModel @Inject constructor(
         editingId = id
         viewModelScope.launch {
             val med = repository.getMedicationById(id) ?: return@launch
+            existingRemainingQuantity = med.remainingQuantity
             _uiState.update {
                 it.copy(
                     name = med.name,
@@ -186,8 +188,8 @@ class AddMedicationViewModel @Inject constructor(
                 notes = state.notes.trim(),
                 stockQuantity = stock,
                 remainingQuantity = if (state.isEditMode) {
-                    // preserve remaining on edit; only reset if user changed the stock value
-                    stock
+                    // Preserve remaining on edit; cap at new stock if it was reduced
+                    minOf(existingRemainingQuantity, stock)
                 } else {
                     stock
                 }
