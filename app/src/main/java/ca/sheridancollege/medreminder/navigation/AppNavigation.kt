@@ -30,6 +30,7 @@ fun AppNavigation() {
     val items = listOf(
         Screen.Today,
         Screen.Medications,
+        Screen.Emergency,
         Screen.History,
         Screen.Settings
     )
