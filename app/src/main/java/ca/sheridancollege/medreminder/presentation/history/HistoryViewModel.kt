@@ -24,7 +24,11 @@ class HistoryViewModel @Inject constructor(
         repository.getAllLogs(),
         repository.getAllDoseEvents()
     ) { logs, events ->
-        HistoryUiState(logs = logs, doseEvents = events, isLoading = false)
+        HistoryUiState(
+            logs = logs,
+            doseEvents = events.sortedByDescending { it.scheduledTime },
+            isLoading = false
+        )
     }
         .stateIn(
             scope = viewModelScope,

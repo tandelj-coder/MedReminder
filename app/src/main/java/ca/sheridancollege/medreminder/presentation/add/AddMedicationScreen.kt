@@ -53,7 +53,7 @@ fun AddMedicationScreen(
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
 
     LaunchedEffect(medicationId) {
-        if (medicationId != 0) {
+        if (medicationId != -1 && medicationId != 0) {
             viewModel.loadMedication(medicationId)
         }
     }

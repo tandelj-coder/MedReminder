@@ -125,6 +125,12 @@ fun TodayScreen(
                     }
                 }
 
+                if (uiState.lowStockMedications.isNotEmpty()) {
+                    item {
+                        LowStockAlert(lowStockMedications = uiState.lowStockMedications)
+                    }
+                }
+
                 item {
                     val progress = if (uiState.adherenceStats.totalScheduled > 0) 
                         uiState.adherenceStats.totalTaken.toFloat() / uiState.adherenceStats.totalScheduled 
@@ -180,66 +186,198 @@ fun TodayScreen(
                     }
                 }
 
-                val pending = uiState.doseEvents.filter { it.isScheduled() }
-                val taken = uiState.doseEvents.filter { it.isTaken() }
-
-                if (pending.isNotEmpty()) {
-                    item { SectionHeader(title = "UPCOMING SESSIONS", color = RacingRed) }
-                    items(pending, key = { it.id }) { dose ->
-                        SwipeablePaddockDoseItem(
-                            doseEvent = dose,
-                            onSwipeConfirm = { viewModel.onMarkAsTaken(dose) },
-                            onDelete = { viewModel.onDeleteMedication(dose) },
-                            onEdit = { onEditMedication(dose.medicationId) }
-                        )
+                if (uiState.groupedDoses.isNotEmpty()) {
+                    uiState.groupedDoses.forEach { group ->
+                        item { SectionHeader(title = group.timeLabel, color = MaterialTheme.colorScheme.primary) }
+                        items(group.doses, key = { it.id }) { dose ->
+                            DoseCard(
+                                dose = dose,
+                                onTake = { viewModel.onMarkAsTaken(dose) },
+                                onSkip = { viewModel.onSkipDose(dose) }
+                            )
+                        }
                     }
-                }
-
-                if (taken.isNotEmpty()) {
-                    item { SectionHeader(title = "COMPLETED LAPS", color = RacingTeal) }
-                    items(taken, key = { it.id }) { dose ->
-                        SwipeablePaddockDoseItem(
-                            doseEvent = dose,
-                            onSwipeConfirm = {},
-                            onDelete = { viewModel.onDeleteMedication(dose) },
-                            onEdit = { onEditMedication(dose.medicationId) }
-                        )
-                    }
+                } else {
+                    item { EmptyTodayState() }
                 }
             }
 
             if (isGoalReached) { CheckeredFlagCelebration() }
+
+            // Double Dose Dialog (F1 Racing Theme)
+            uiState.doubleDoseWarning?.let { warning ->
+                AlertDialog(
+                    onDismissRequest = { viewModel.onDismissDoubleDoseWarning() },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = RacingRed,
+                    textContentColor = MaterialTheme.colorScheme.onSurface,
+                    icon = { Icon(Icons.Default.Warning, null, tint = RacingRed, modifier = Modifier.size(40.dp)) },
+                    title = { Text("DOUBLE DOSE WARNING", fontWeight = FontWeight.Black) },
+                    text = {
+                        Text(
+                            "You already completed this lap ${warning.minutesSinceLastDose} minutes ago. Entering the pits again may be dangerous. Confirm additional pit stop?",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { viewModel.onConfirmDoubleDose(warning.doseEvent) },
+                            colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
+                        ) { Text("CONFIRM", fontWeight = FontWeight.Black, color = Color.White) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.onDismissDoubleDoseWarning() }) {
+                            Text("ABORT", color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                )
+            }
         }
     }
+}
 
-    // Double Dose Dialog (F1 Racing Theme)
-    uiState.doubleDoseWarning?.let { warning ->
-        AlertDialog(
-            onDismissRequest = { viewModel.onDismissDoubleDoseWarning() },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = RacingRed,
-            textContentColor = MaterialTheme.colorScheme.onSurface,
-            icon = { Icon(Icons.Default.Warning, null, tint = RacingRed, modifier = Modifier.size(40.dp)) },
-            title = { Text("DOUBLE DOSE WARNING", fontWeight = FontWeight.Black) },
-            text = {
-                Text(
-                    "You already completed this lap ${warning.minutesSinceLastDose} minutes ago. Entering the pits again may be dangerous. Confirm additional pit stop?",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.onConfirmDoubleDose(warning.doseEvent) },
-                    colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
-                ) { Text("CONFIRM", fontWeight = FontWeight.Black, color = Color.White) }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.onDismissDoubleDoseWarning() }) { 
-                    Text("ABORT", color = MaterialTheme.colorScheme.onSurface) 
+@Composable
+fun LowStockAlert(lowStockMedications: List<ca.sheridancollege.medreminder.domain.model.Medication>) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = RacingOrange.copy(alpha = 0.1f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, RacingOrange.copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = RacingOrange, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("LOW FUEL WARNING", style = MaterialTheme.typography.labelSmall, color = RacingOrange, fontWeight = FontWeight.Black)
+            }
+            Spacer(Modifier.height(8.dp))
+            lowStockMedications.forEach { med ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(med.name.uppercase(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "${med.remainingQuantity} UNITS REMAINING",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = RacingRed,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
-        )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "BOX BOX BOX - REFILL SOON",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontStyle = FontStyle.Italic
+            )
+        }
     }
+}
+
+@Composable
+fun DoseCard(dose: DoseEvent, onTake: () -> Unit, onSkip: () -> Unit) {
+    val takenColor = Color(0xFF2E7D32)
+    val missedColor = Color(0xFFC62828)
+
+    val bg = when (dose.status) {
+        ca.sheridancollege.medreminder.domain.model.DoseStatus.TAKEN -> takenColor.copy(alpha = 0.1f)
+        ca.sheridancollege.medreminder.domain.model.DoseStatus.MISSED -> missedColor.copy(alpha = 0.1f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+
+    val statusBorder = when (dose.status) {
+        ca.sheridancollege.medreminder.domain.model.DoseStatus.TAKEN -> takenColor.copy(alpha = 0.5f)
+        ca.sheridancollege.medreminder.domain.model.DoseStatus.MISSED -> missedColor.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.outlineVariant
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = bg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, statusBorder)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        dose.medicationName.uppercase(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        "Scheduled for ${SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(dose.scheduledTime))}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                if (dose.isTaken()) {
+                    Icon(Icons.Default.Check, null, tint = takenColor)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            when (dose.status) {
+                ca.sheridancollege.medreminder.domain.model.DoseStatus.SCHEDULED -> {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onTake,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("TAKE", fontWeight = FontWeight.Black)
+                        }
+                        OutlinedButton(
+                            onClick = onSkip,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("SKIP")
+                        }
+                    }
+                }
+                ca.sheridancollege.medreminder.domain.model.DoseStatus.TAKEN -> {
+                    Text(
+                        "Taken at ${SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(dose.takenAt ?: 0))}",
+                        color = takenColor,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                ca.sheridancollege.medreminder.domain.model.DoseStatus.MISSED -> {
+                    Text("Missed", color = missedColor, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                }
+                else -> {}
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptyTodayState() {
+    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("🏁", fontSize = 48.sp)
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "No doses scheduled for today.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
 }
 
 @Composable

@@ -20,6 +20,11 @@ interface MedicationRepository {
         scheduledHour: Int,
         scheduledMinute: Int
     )
+    suspend fun markAsSkipped(
+        medicationId: Int,
+        scheduledHour: Int,
+        scheduledMinute: Int
+    )
     suspend fun resetAllDailyStatus()
     suspend fun resetDoseEventsForDay(startOfDay: Long, endOfDay: Long)
     fun getAllLogs(): Flow<List<IntakeLog>>

@@ -14,17 +14,27 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 data class TodayUiState(
-    val doseEvents: List<DoseEvent> = emptyList(),
+    val groupedDoses: List<DoseTimeGroup> = emptyList(),
     val adherenceStats: AdherenceStats = AdherenceStats(0, 0, 0),
     val isLoading: Boolean = true,
     val doubleDoseWarning: DoubleDoseWarningState? = null,
     val snackbarMessage: String? = null,
     val showResetConfirm: Boolean = false,
-    val nextDoseInfo: NextDoseInfo? = null
+    val nextDoseInfo: NextDoseInfo? = null,
+    val doseEvents: List<DoseEvent> = emptyList(), // Keep for compatibility or internal use
+    val lowStockMedications: List<Medication> = emptyList()
+)
+
+data class DoseTimeGroup(
+    val timeLabel: String,
+    val doses: List<DoseEvent>
 )
 
 data class NextDoseInfo(
@@ -54,7 +64,17 @@ class TodayViewModel @Inject constructor(
     init {
         loadDoseEvents()
         loadStats()
+        loadLowStockMeds()
         startCountdownTimer()
+    }
+
+    private fun loadLowStockMeds() {
+        viewModelScope.launch {
+            medicationRepository.getAllActiveMedications().collect { meds ->
+                val lowStock = meds.filter { it.remainingQuantity <= it.refillThreshold }
+                _uiState.update { it.copy(lowStockMedications = lowStock) }
+            }
+        }
     }
 
     private fun loadDoseEvents() {
@@ -63,7 +83,22 @@ class TodayViewModel @Inject constructor(
             doseEventRepository.getDoseEventsForDay(startOfDay, endOfDay)
                 .catch { _uiState.update { it.copy(isLoading = false) } }
                 .collect { doses ->
-                    _uiState.update { it.copy(doseEvents = doses, isLoading = false) }
+                    val grouped = doses.groupBy { dose ->
+                        SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(dose.scheduledTime))
+                    }.map { (time, events) ->
+                        DoseTimeGroup(time, events)
+                    }.sortedBy { group ->
+                        // Parse time back to sort properly or use first dose's scheduledTime
+                        group.doses.firstOrNull()?.scheduledTime ?: 0L
+                    }
+
+                    _uiState.update { 
+                        it.copy(
+                            doseEvents = doses, 
+                            groupedDoses = grouped,
+                            isLoading = false 
+                        ) 
+                    }
                     updateNextDose(doses)
                 }
         }
@@ -155,6 +190,18 @@ class TodayViewModel @Inject constructor(
                     snackbarMessage = "${doseEvent.medicationName} marked as taken ✓"
                 )
             }
+        }
+    }
+
+    fun onSkipDose(doseEvent: DoseEvent) {
+        viewModelScope.launch {
+            val cal = Calendar.getInstance().apply { timeInMillis = doseEvent.scheduledTime }
+            medicationRepository.markAsSkipped(
+                medicationId = doseEvent.medicationId,
+                scheduledHour = cal.get(Calendar.HOUR_OF_DAY),
+                scheduledMinute = cal.get(Calendar.MINUTE)
+            )
+            _uiState.update { it.copy(snackbarMessage = "${doseEvent.medicationName} skipped") }
         }
     }
 

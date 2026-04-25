@@ -148,6 +148,28 @@ class MedicationRepositoryImpl @Inject constructor(
         } catch (e: Exception) { }
     }
 
+    override suspend fun markAsSkipped(
+        medicationId: Int,
+        scheduledHour: Int,
+        scheduledMinute: Int
+    ) {
+        val (startOfDay, endOfDay) = todayRange()
+        try {
+            val doseEvent = doseEventRepository
+                .getDoseEventsForMedicationOnDay(medicationId, startOfDay, endOfDay)
+                .map { events ->
+                    events.firstOrNull { event ->
+                        val cal = Calendar.getInstance().apply { timeInMillis = event.scheduledTime }
+                        event.isScheduled() && cal.get(Calendar.HOUR_OF_DAY) == scheduledHour && cal.get(Calendar.MINUTE) == scheduledMinute
+                    }
+                }
+                .filterNotNull()
+                .first()
+
+            doseEventRepository.updateDoseStatus(doseEvent.id, DoseStatus.SKIPPED)
+        } catch (e: Exception) { }
+    }
+
     override suspend fun resetAllDailyStatus() {
         val (startOfDay, endOfDay) = todayRange()
         intakeLogDao.deleteLogsForDay(startOfDay, endOfDay)
