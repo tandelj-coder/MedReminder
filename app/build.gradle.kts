@@ -97,6 +97,9 @@ dependencies {
     // Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // GSON
+    implementation(libs.gson)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

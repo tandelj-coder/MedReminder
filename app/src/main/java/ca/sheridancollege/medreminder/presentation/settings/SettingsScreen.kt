@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,44 +42,40 @@ fun SettingsScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF0D2447),
-                            Color(0xFF1A3A6E),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
+                .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(horizontal = 20.dp, vertical = 24.dp)
         ) {
             Column {
                 Text(
                     "Settings",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
                     "Manage your preferences",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
 
                 Spacer(Modifier.height(16.dp))
 
-                // Test Notification button
                 OutlinedButton(
                     onClick = { viewModel.sendTestNotification(context) },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Default.Notifications, null,
-                        modifier = Modifier.size(18.dp), tint = Color.White)
+                        modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Test Notification", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("Test Notification", fontWeight = FontWeight.SemiBold)
                 }
             }
         }

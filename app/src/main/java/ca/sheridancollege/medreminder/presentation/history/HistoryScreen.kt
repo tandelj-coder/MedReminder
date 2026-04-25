@@ -1,7 +1,6 @@
 package ca.sheridancollege.medreminder.presentation.history
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,62 +15,49 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import ca.sheridancollege.medreminder.domain.model.IntakeLog
-import ca.sheridancollege.medreminder.ui.theme.*
+import ca.sheridancollege.medreminder.domain.model.DoseEvent
+import ca.sheridancollege.medreminder.ui.theme.MedMissed
+import ca.sheridancollege.medreminder.ui.theme.MedTaken
+import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 20.dp)
         ) {
-            Spacer(Modifier.height(32.dp))
-            
+            Spacer(Modifier.height(24.dp))
             Text(
-                "LOGBOOK",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 2.sp,
-                fontWeight = FontWeight.Bold
+                "Intake History",
+                style      = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color      = MaterialTheme.colorScheme.onBackground
             )
-            Text(
-                "Session History",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(16.dp))
 
             when {
                 uiState.isLoading -> Box(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = RacingRed, strokeWidth = 3.dp) }
+                ) { CircularProgressIndicator(strokeWidth = 3.dp) }
 
-                uiState.logs.isEmpty() -> EmptyHistoryState()
+                uiState.doseEvents.isEmpty() -> EmptyHistoryState()
 
-                else -> {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(bottom = 32.dp)
-                    ) {
-                        items(uiState.logs) { log ->
-                            PaddockHistoryCard(log)
-                        }
+                else -> LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding      = PaddingValues(bottom = 32.dp)
+                ) {
+                    items(uiState.doseEvents.filter { !it.isScheduled() }) { event ->
+                        HistoryEventCard(event)
                     }
                 }
             }
@@ -80,69 +66,88 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 }
 
 @Composable
-fun PaddockHistoryCard(log: IntakeLog) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp, 
-            if (log.wasDoubleDoseAttempt) RacingRed.copy(alpha = 0.5f) else RacingTeal.copy(alpha = 0.3f)
-        )
+fun HistoryEventCard(event: DoseEvent) {
+    val isTaken  = event.isTaken()
+    val isMissed = event.isMissed()
+
+    val statusColor = when {
+        isTaken  -> MedTaken
+        isMissed -> MedMissed
+        else     -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val statusIcon = when {
+        isTaken  -> Icons.Outlined.CheckCircle
+        isMissed -> Icons.Outlined.Warning
+        else     -> Icons.Outlined.History
+    }
+
+    val timeFormatter = SimpleDateFormat("h:mm a", Locale.getDefault())
+    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+
+    Card(
+        modifier  = Modifier.fillMaxWidth(),
+        shape     = RoundedCornerShape(12.dp),
+        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier              = Modifier.padding(16.dp),
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // High-Contrast Status Icon
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (log.wasDoubleDoseAttempt) RacingRed.copy(alpha = 0.1f)
-                        else RacingTeal.copy(alpha = 0.1f)
-                    ),
+                    .background(statusColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (log.wasDoubleDoseAttempt) Icons.Outlined.Warning 
-                                 else Icons.Outlined.CheckCircle,
+                    imageVector        = statusIcon,
                     contentDescription = null,
-                    tint = if (log.wasDoubleDoseAttempt) RacingRed else RacingTeal,
-                    modifier = Modifier.size(24.dp)
+                    tint               = statusColor,
+                    modifier           = Modifier.size(22.dp)
                 )
             }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    log.medicationName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface
+                    event.medicationName,
+                    style      = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    log.formattedDate(),
-                    style = MaterialTheme.typography.labelSmall,
+                    dateFormatter.format(Date(event.scheduledTime)),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    log.formattedTime(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    timeFormatter.format(Date(event.takenAt ?: event.scheduledTime)),
+                    style      = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color      = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    if (log.wasOnTime) "ON TIME" else "LATE",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (log.wasOnTime) RacingTeal else RacingRed,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
-                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = statusColor.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        when {
+                            isTaken  -> "Taken"
+                            isMissed -> "Missed"
+                            else     -> event.status.name
+                        },
+                        style      = MaterialTheme.typography.labelSmall,
+                        color      = statusColor,
+                        fontWeight = FontWeight.Medium,
+                        modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
     }
@@ -151,14 +156,19 @@ fun PaddockHistoryCard(log: IntakeLog) {
 @Composable
 fun EmptyHistoryState() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Outlined.History, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
-            Spacer(Modifier.height(16.dp))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                Icons.Outlined.History, null,
+                tint     = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(48.dp)
+            )
             Text(
-                "No telemetry data.",
+                "No intake history yet",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Medium
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

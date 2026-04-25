@@ -6,26 +6,35 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "intake_logs",
+    tableName = "dose_events",
     foreignKeys = [ForeignKey(
         entity = MedicationEntity::class,
         parentColumns = ["id"],
         childColumns = ["medicationId"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["medicationId"])]
+    indices = [
+        Index(value = ["medicationId"]),
+        Index(value = ["scheduledTime"]),
+        Index(value = ["status"])
+    ]
 )
-data class IntakeLogEntity(
+data class DoseEventEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val medicationId: Int,
     val medicationName: String,
-    val takenAt: Long,
-    val scheduledHour: Int,
-    val scheduledMinute: Int,
-    val wasOnTime: Boolean,
-    val snoozeReason: String = "",
-    val wasDoubleDoseAttempt: Boolean = false,
+    val scheduledTime: Long,
+    val status: String,
+    val takenAt: Long? = null,
+    val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false
 )
+
+enum class DoseStatus {
+    SCHEDULED,
+    TAKEN,
+    MISSED,
+    SNOOZED
+}

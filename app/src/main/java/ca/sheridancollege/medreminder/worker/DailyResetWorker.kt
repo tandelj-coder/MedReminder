@@ -43,6 +43,7 @@ class DailyResetWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             repository.resetAllDailyStatus()
+            repository.generateDoseEventsForToday()
             Result.success()
         } catch (_: Exception) {
             Result.retry()

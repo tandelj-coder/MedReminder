@@ -1,5 +1,6 @@
 package ca.sheridancollege.medreminder.data.repository
 
+import ca.sheridancollege.medreminder.domain.model.DoseEvent
 import ca.sheridancollege.medreminder.domain.model.IntakeLog
 import ca.sheridancollege.medreminder.domain.model.Medication
 import kotlinx.coroutines.flow.Flow
@@ -19,8 +20,21 @@ interface MedicationRepository {
         scheduledHour: Int,
         scheduledMinute: Int
     )
+    suspend fun markAsSkipped(
+        medicationId: Int,
+        scheduledHour: Int,
+        scheduledMinute: Int
+    )
     suspend fun resetAllDailyStatus()
+    suspend fun resetDoseEventsForDay(startOfDay: Long, endOfDay: Long)
     fun getAllLogs(): Flow<List<IntakeLog>>
     fun getLogsForDay(startOfDay: Long, endOfDay: Long): Flow<List<IntakeLog>>
     suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLog?
+
+    fun getAllDoseEvents(): Flow<List<DoseEvent>>
+
+    suspend fun syncFromRemote(medications: List<Medication>, logs: List<IntakeLog>)
+
+    fun getTodayDoseEvents(startOfDay: Long, endOfDay: Long): Flow<List<DoseEvent>>
+    suspend fun generateDoseEventsForToday(): Result<Int>
 }

@@ -161,7 +161,9 @@ class EmergencyViewModel @Inject constructor(
     fun sendEmergencySms(context: Context) {
         val state = uiState.value
         if (state.emergencyPhone.isBlank()) return
-        val medList = state.medications.joinToString("\n") { "• ${it.name} ${it.dosage} at ${it.formattedTime()}" }
+        val medList = state.medications.joinToString("\n") { 
+            "• ${it.name} ${it.dosageAmount} ${it.dosageUnit} at ${it.times.joinToString { t -> t.formatted() }}" 
+        }
         val message = """
 🚨 EMERGENCY ALERT from MedReminder
 🩸 Blood Type: ${state.bloodType.ifBlank { "Unknown" }}
@@ -187,7 +189,7 @@ Please help immediately.
     fun shareMedicationList(context: Context) {
         val state = uiState.value
         val medList = state.medications.joinToString("\n") {
-            "• ${it.name} — ${it.dosage} — ${it.formattedTime()}"
+            "• ${it.name} — ${it.dosageAmount} ${it.dosageUnit} — ${it.times.joinToString { t -> t.formatted() }}"
         }
         val text = """
 MEDICAL INFORMATION CARD — MedReminder

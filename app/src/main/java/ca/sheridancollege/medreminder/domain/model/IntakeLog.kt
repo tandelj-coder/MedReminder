@@ -12,7 +12,8 @@ data class IntakeLog(
     val scheduledMinute: Int,
     val wasOnTime: Boolean,
     val snoozeReason: String = "",
-    val wasDoubleDoseAttempt: Boolean = false
+    val wasDoubleDoseAttempt: Boolean = false,
+    val updatedAt: Long = System.currentTimeMillis()
 ) {
     fun formattedTime(): String =
         SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(takenAt))

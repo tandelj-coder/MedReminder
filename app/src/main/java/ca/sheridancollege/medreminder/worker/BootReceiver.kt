@@ -8,6 +8,9 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             DailyResetWorker.schedule(context)
+            DoseEventGenerationWorker.scheduleOnAppStart(context)
+            DoseMissedDetectionWorker.scheduleImmediateRun(context)
+            DoseMissedDetectionWorker.schedule(context)
         }
     }
 }

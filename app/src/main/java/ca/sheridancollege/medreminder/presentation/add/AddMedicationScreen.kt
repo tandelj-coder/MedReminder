@@ -2,12 +2,10 @@ package ca.sheridancollege.medreminder.presentation.add
 
 import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,252 +15,331 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
-import ca.sheridancollege.medreminder.ui.theme.*
+import ca.sheridancollege.medreminder.domain.model.DrugSuggestion
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddMedicationScreen(
-    medicationId: Int = 0,
     onNavigateBack: () -> Unit,
     viewModel: AddMedicationViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(medicationId) {
-        if (medicationId != 0) {
-            viewModel.loadMedication(medicationId)
-        }
-    }
-
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) onNavigateBack()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Racing Ambient Glow
-        Box(
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        if (uiState.isEditMode) "Edit Medication" else "Add Medication",
+                        style      = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .size(300.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 100.dp, y = (-100).dp)
-                .blur(100.dp)
-                .clip(CircleShape)
-                .background(F1Red.copy(alpha = 0.15f))
-        )
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Spacer(Modifier.height(8.dp))
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = { 
-                        Text(
-                            if (medicationId == 0) "NEW ENTRY" else "EDIT ENTRY", 
-                            style = MaterialTheme.typography.labelLarge, 
-                            color = MaterialTheme.colorScheme.onBackground,
-                            letterSpacing = 2.sp,
-                            fontWeight = FontWeight.Black
-                        ) 
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = MaterialTheme.colorScheme.onBackground)
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+            // Drug name with autocomplete
+            DrugAutocompleteField(
+                value                = uiState.name,
+                onValueChange        = viewModel::onNameChange,
+                suggestions          = uiState.drugSuggestions,
+                isSearching          = uiState.isSearching,
+                showSuggestions      = uiState.showSuggestions,
+                searchError          = uiState.searchError,
+                onSuggestionSelected = viewModel::onDrugSelected,
+                onDismiss            = viewModel::onDismissSuggestions,
+                error                = uiState.nameError
+            )
+
+            MedTextField(
+                value         = uiState.dosageAmount,
+                onValueChange = viewModel::onDosageAmountChange,
+                label         = "Dosage",
+                placeholder   = "e.g. 500 mg"
+            )
+
+            // Time selector for first dose time
+            val firstTime = uiState.times.firstOrNull()
+            MedSelector(
+                label   = "Reminder time",
+                value   = String.format(
+                    Locale.getDefault(), "%02d:%02d",
+                    firstTime?.hour ?: 8, firstTime?.minute ?: 0
+                ),
+                icon    = Icons.Outlined.Schedule,
+                onClick = {
+                    TimePickerDialog(context, { _, h, m ->
+                        viewModel.onTimeChange(0, h, m)
+                    }, firstTime?.hour ?: 8, firstTime?.minute ?: 0, false).show()
+                }
+            )
+
+            // Day selector
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Frequency",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 20.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                Spacer(Modifier.height(16.dp))
-
-                // Racing Style Inputs
-                RacingTextField(
-                    value = uiState.name,
-                    onValueChange = viewModel::onNameChange,
-                    label = "MEDICATION NAME",
-                    placeholder = "ENTER NAME...",
-                    error = uiState.nameError
-                )
-
-                RacingTextField(
-                    value = uiState.dosage,
-                    onValueChange = viewModel::onDosageChange,
-                    label = "DOSAGE (mg)",
-                    placeholder = "ENTER DOSAGE (e.g. 500)..."
-                )
-
-                // Time Selector (Racing Style)
-                RacingSelector(
-                    label = "REMINDER TIME",
-                    value = String.format(Locale.getDefault(), "%02d:%02d", uiState.timeHour, uiState.timeMinute),
-                    icon = Icons.Outlined.Schedule,
-                    onClick = {
-                        TimePickerDialog(context, { _, h, m ->
-                            viewModel.onTimeChange(h, m)
-                        }, uiState.timeHour, uiState.timeMinute, false).show()
-                    }
-                )
-
-                // Day Selector (Racing Chips)
-                Column {
-                    Text("FREQUENCY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(12.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        DayOfWeek.entries.forEach { day ->
-                            val isSelected = uiState.selectedDays.contains(day)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { viewModel.onDayToggled(day) },
-                                label = { Text(day.displayName) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = F1Red,
-                                    selectedLabelColor = Color.White,
-                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    borderColor = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                    enabled = true,
-                                    selected = isSelected
-                                )
+                FlowRow(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement   = Arrangement.spacedBy(8.dp)
+                ) {
+                    DayOfWeek.entries.forEach { day ->
+                        val selected = uiState.selectedDays.contains(day)
+                        FilterChip(
+                            selected = selected,
+                            onClick  = { viewModel.onDayToggled(day) },
+                            label    = { Text(day.displayName) },
+                            colors   = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor     = MaterialTheme.colorScheme.onPrimary
                             )
-                        }
-                    }
-                    if (uiState.daysError != null) {
-                        Text(
-                            text = uiState.daysError!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = F1Red,
-                            modifier = Modifier.padding(top = 8.dp)
                         )
                     }
                 }
+                if (uiState.daysError != null) {
+                    Text(
+                        uiState.daysError!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
 
-                RacingTextField(
-                    value = uiState.notes,
-                    onValueChange = viewModel::onNotesChange,
-                    label = "NOTES (OPTIONAL)",
-                    placeholder = "ADD NOTES...",
-                    singleLine = false
-                )
+            MedTextField(
+                value         = uiState.notes,
+                onValueChange = viewModel::onNotesChange,
+                label         = "Notes (optional)",
+                placeholder   = "Generic name, instructions…",
+                singleLine    = false
+            )
 
-                Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(8.dp))
 
-                // High-Contrast Racing Button
-                Button(
-                    onClick = viewModel::onSave,
-                    modifier = Modifier
+            Button(
+                onClick  = viewModel::onSave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape   = RoundedCornerShape(12.dp),
+                enabled = !uiState.isSaving
+            ) {
+                if (uiState.isSaving) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(20.dp),
+                        color       = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        if (uiState.isEditMode) "Update Medication" else "Save Medication",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+// ── Shared field components ────────────────────────────────────────────────
+
+@Composable
+fun DrugAutocompleteField(
+    value                : String,
+    onValueChange        : (String) -> Unit,
+    suggestions          : List<DrugSuggestion>,
+    isSearching          : Boolean,
+    showSuggestions      : Boolean,
+    searchError          : String?,
+    onSuggestionSelected : (DrugSuggestion) -> Unit,
+    onDismiss            : () -> Unit,
+    error                : String? = null
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            "Medication name",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Box {
+            OutlinedTextField(
+                value         = value,
+                onValueChange = onValueChange,
+                placeholder   = { Text("Search drug name…") },
+                modifier      = Modifier.fillMaxWidth(),
+                shape         = RoundedCornerShape(12.dp),
+                singleLine    = true,
+                isError       = error != null,
+                trailingIcon  = {
+                    if (isSearching) CircularProgressIndicator(
+                        modifier    = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            )
+
+            if (showSuggestions) {
+                DropdownMenu(
+                    expanded         = true,
+                    onDismissRequest = onDismiss,
+                    modifier         = Modifier
                         .fillMaxWidth()
-                        .height(64.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Brush.horizontalGradient(listOf(F1Red, Color(0xFF8B0000)))),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    elevation = null,
-                    enabled = !uiState.isSaving
+                        .heightIn(max = 240.dp)
                 ) {
-                    if (uiState.isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
+                    if (suggestions.isEmpty()) {
+                        DropdownMenuItem(
+                            text    = {
+                                Text(
+                                    "No results found",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = onDismiss
+                        )
                     } else {
-                        Text("CONFIRM SESSION", color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 1.sp)
+                        suggestions.forEach { s ->
+                            DropdownMenuItem(
+                                text    = { Text(s.name) },
+                                onClick = { onSuggestionSelected(s) }
+                            )
+                        }
                     }
                 }
-                
-                Spacer(Modifier.height(40.dp))
             }
+        }
+
+        if (error != null) {
+            Text(error, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error)
+        }
+        if (searchError != null) {
+            Text(searchError, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-fun RacingTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    singleLine: Boolean = true,
-    error: String? = null
+fun MedTextField(
+    value         : String,
+    onValueChange : (String) -> Unit,
+    label         : String,
+    placeholder   : String,
+    singleLine    : Boolean = true,
+    error         : String? = null
 ) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        TextField(
-            value = value,
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        OutlinedTextField(
+            value         = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, if (error != null) F1Red else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                disabledContainerColor = MaterialTheme.colorScheme.surface,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = F1Red,
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-            ),
-            shape = RoundedCornerShape(12.dp),
+            placeholder   = {
+                Text(
+                    placeholder,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            },
+            modifier   = Modifier.fillMaxWidth(),
+            shape      = RoundedCornerShape(12.dp),
             singleLine = singleLine,
-            isError = error != null
+            isError    = error != null
         )
         if (error != null) {
-            Text(
-                text = error,
-                style = MaterialTheme.typography.bodySmall,
-                color = F1Red,
-                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
-            )
+            Text(error, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error)
         }
     }
 }
 
 @Composable
-fun RacingSelector(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    Column(modifier = Modifier.clickable { onClick() }) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+fun MedSelector(
+    label  : String,
+    value  : String,
+    icon   : androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        OutlinedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
+            shape = RoundedCornerShape(12.dp)
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier              = Modifier.padding(16.dp),
+                verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Black)
-                Icon(icon, null, tint = F1Red, modifier = Modifier.size(20.dp))
+                Text(
+                    value,
+                    style      = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color      = MaterialTheme.colorScheme.onSurface
+                )
+                Icon(
+                    icon, null,
+                    tint     = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
 }
+
+// Keep old names so any stale references compile
+@Composable
+fun RacingTextField(
+    value: String, onValueChange: (String) -> Unit,
+    label: String, placeholder: String,
+    singleLine: Boolean = true, error: String? = null
+) = MedTextField(value, onValueChange, label, placeholder, singleLine, error)
+
+@Composable
+fun RacingSelector(
+    label: String, value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit
+) = MedSelector(label, value, icon, onClick)

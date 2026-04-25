@@ -2,46 +2,57 @@ package ca.sheridancollege.medreminder.presentation.today
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ca.sheridancollege.medreminder.data.repository.DoseEventRepository
+import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.domain.model.AdherenceStats
+import ca.sheridancollege.medreminder.domain.model.DoseEvent
 import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.domain.usecase.DeleteMedicationUseCase
 import ca.sheridancollege.medreminder.domain.usecase.GetAdherenceStatsUseCase
-import ca.sheridancollege.medreminder.domain.usecase.GetTodayMedicationsUseCase
-import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenResult
-import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenUseCase
 import ca.sheridancollege.medreminder.domain.usecase.ResetDailyStatusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 data class TodayUiState(
-    val medications: List<Medication> = emptyList(),
+    val groupedDoses: List<DoseTimeGroup> = emptyList(),
     val adherenceStats: AdherenceStats = AdherenceStats(0, 0, 0),
     val isLoading: Boolean = true,
     val doubleDoseWarning: DoubleDoseWarningState? = null,
     val snackbarMessage: String? = null,
     val showResetConfirm: Boolean = false,
-    val nextDoseInfo: NextDoseInfo? = null
+    val nextDoseInfo: NextDoseInfo? = null,
+    val doseEvents: List<DoseEvent> = emptyList(), // Keep for compatibility or internal use
+    val lowStockMedications: List<Medication> = emptyList()
+)
+
+data class DoseTimeGroup(
+    val timeLabel: String,
+    val doses: List<DoseEvent>
 )
 
 data class NextDoseInfo(
     val medicationName: String,
-    val remainingTimeMillis: Long
+    val remainingTimeMillis: Long,
+    val doseEventId: Int
 )
 
 data class DoubleDoseWarningState(
-    val medication: Medication,
+    val doseEvent: DoseEvent,
     val lastTakenAt: Long,
     val minutesSinceLastDose: Long
 )
 
 @HiltViewModel
 class TodayViewModel @Inject constructor(
-    private val getTodayMedications: GetTodayMedicationsUseCase,
-    private val markAsTaken: MarkAsTakenUseCase,
+    private val doseEventRepository: DoseEventRepository,
+    private val medicationRepository: MedicationRepository,
     private val getAdherenceStats: GetAdherenceStatsUseCase,
     private val deleteMedication: DeleteMedicationUseCase,
     private val resetDailyStatus: ResetDailyStatusUseCase
@@ -51,18 +62,44 @@ class TodayViewModel @Inject constructor(
     val uiState: StateFlow<TodayUiState> = _uiState.asStateFlow()
 
     init {
-        loadMedications()
+        loadDoseEvents()
         loadStats()
+        loadLowStockMeds()
         startCountdownTimer()
     }
 
-    private fun loadMedications() {
+    private fun loadLowStockMeds() {
         viewModelScope.launch {
-            getTodayMedications()
+            medicationRepository.getAllActiveMedications().collect { meds ->
+                val lowStock = meds.filter { it.remainingQuantity <= it.refillThreshold }
+                _uiState.update { it.copy(lowStockMedications = lowStock) }
+            }
+        }
+    }
+
+    private fun loadDoseEvents() {
+        viewModelScope.launch {
+            val (startOfDay, endOfDay) = todayRange()
+            doseEventRepository.getDoseEventsForDay(startOfDay, endOfDay)
                 .catch { _uiState.update { it.copy(isLoading = false) } }
-                .collect { meds ->
-                    _uiState.update { it.copy(medications = meds, isLoading = false) }
-                    updateNextDose(meds)
+                .collect { doses ->
+                    val grouped = doses.groupBy { dose ->
+                        SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(dose.scheduledTime))
+                    }.map { (time, events) ->
+                        DoseTimeGroup(time, events)
+                    }.sortedBy { group ->
+                        // Parse time back to sort properly or use first dose's scheduledTime
+                        group.doses.firstOrNull()?.scheduledTime ?: 0L
+                    }
+
+                    _uiState.update { 
+                        it.copy(
+                            doseEvents = doses, 
+                            groupedDoses = grouped,
+                            isLoading = false 
+                        ) 
+                    }
+                    updateNextDose(doses)
                 }
         }
     }
@@ -71,34 +108,39 @@ class TodayViewModel @Inject constructor(
         viewModelScope.launch {
             while (true) {
                 delay(1000)
-                updateNextDose(_uiState.value.medications)
+                updateNextDose(_uiState.value.doseEvents)
             }
         }
     }
 
-    private fun updateNextDose(meds: List<Medication>) {
-        val now = Calendar.getInstance()
-        val nextMed = meds
-            .filter { !it.isTakenToday }
-            .map { med ->
-                val target = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, med.timeHour)
-                    set(Calendar.MINUTE, med.timeMinute)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-                med to target.timeInMillis - now.timeInMillis
-            }
-            .filter { it.second > 0 }
-            .minByOrNull { it.second }
+    private fun updateNextDose(doses: List<DoseEvent>) {
+        val now = System.currentTimeMillis()
+        val nextDose = doses
+            .filter { it.isScheduled() }
+            .minByOrNull { it.scheduledTime }
+            ?.takeIf { it.scheduledTime > now }
 
         _uiState.update {
             it.copy(
-                nextDoseInfo = nextMed?.let { (med, diff) ->
-                    NextDoseInfo(med.name, diff)
+                nextDoseInfo = nextDose?.let { dose ->
+                    NextDoseInfo(
+                        dose.medicationName,
+                        dose.scheduledTime - now,
+                        dose.id
+                    )
                 }
             )
         }
+    }
+
+    private fun todayRange(): Pair<Long, Long> {
+        val start = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        return start to (start + 24 * 60 * 60 * 1000L - 1)
     }
 
     private fun loadStats() {
@@ -110,39 +152,64 @@ class TodayViewModel @Inject constructor(
         }
     }
 
-    fun onMarkAsTaken(medication: Medication, forceConfirm: Boolean = false) {
+    fun onMarkAsTaken(doseEvent: DoseEvent, forceConfirm: Boolean = false) {
         viewModelScope.launch {
-            when (val result = markAsTaken(medication, forceConfirm)) {
-                is MarkAsTakenResult.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            doubleDoseWarning = null,
-                            snackbarMessage = "${medication.name} marked as taken ✓"
-                        )
-                    }
-                }
-                is MarkAsTakenResult.DoubleDoseWarning -> {
+            if (doseEvent.isTaken() && !forceConfirm) {
+                _uiState.update { it.copy(snackbarMessage = "Already taken") }
+                return@launch
+            }
+
+            val lastLog = medicationRepository.getLastIntakeForMedication(doseEvent.medicationId)
+            if (lastLog != null && !forceConfirm) {
+                val minutesSince = (System.currentTimeMillis() - lastLog.takenAt) / 60000
+                if (minutesSince < 120) {
                     _uiState.update {
                         it.copy(
                             doubleDoseWarning = DoubleDoseWarningState(
-                                medication = result.medication,
-                                lastTakenAt = result.lastTakenAt,
-                                minutesSinceLastDose = result.minutesSinceLastDose
+                                doseEvent = doseEvent,
+                                lastTakenAt = lastLog.takenAt,
+                                minutesSinceLastDose = minutesSince
                             )
                         )
                     }
+                    return@launch
                 }
-                is MarkAsTakenResult.AlreadyTaken -> {
-                    _uiState.update { it.copy(snackbarMessage = "Already taken today") }
-                }
+            }
+
+            val cal = Calendar.getInstance().apply { timeInMillis = doseEvent.scheduledTime }
+            medicationRepository.markAsTaken(
+                medicationId = doseEvent.medicationId,
+                timestamp = System.currentTimeMillis(),
+                scheduledHour = cal.get(Calendar.HOUR_OF_DAY),
+                scheduledMinute = cal.get(Calendar.MINUTE)
+            )
+
+            _uiState.update {
+                it.copy(
+                    doubleDoseWarning = null,
+                    snackbarMessage = "${doseEvent.medicationName} marked as taken ✓"
+                )
             }
         }
     }
 
-    fun onDeleteMedication(medication: Medication) {
+    fun onSkipDose(doseEvent: DoseEvent) {
         viewModelScope.launch {
+            val cal = Calendar.getInstance().apply { timeInMillis = doseEvent.scheduledTime }
+            medicationRepository.markAsSkipped(
+                medicationId = doseEvent.medicationId,
+                scheduledHour = cal.get(Calendar.HOUR_OF_DAY),
+                scheduledMinute = cal.get(Calendar.MINUTE)
+            )
+            _uiState.update { it.copy(snackbarMessage = "${doseEvent.medicationName} skipped") }
+        }
+    }
+
+    fun onDeleteMedication(doseEvent: DoseEvent) {
+        viewModelScope.launch {
+            val medication = medicationRepository.getMedicationById(doseEvent.medicationId) ?: return@launch
             deleteMedication(medication)
-            _uiState.update { it.copy(snackbarMessage = "${medication.name} removed") }
+            _uiState.update { it.copy(snackbarMessage = "${doseEvent.medicationName} removed") }
         }
     }
 
@@ -170,8 +237,8 @@ class TodayViewModel @Inject constructor(
         _uiState.update { it.copy(doubleDoseWarning = null) }
     }
 
-    fun onConfirmDoubleDose(medication: Medication) {
-        onMarkAsTaken(medication, forceConfirm = true)
+    fun onConfirmDoubleDose(doseEvent: DoseEvent) {
+        onMarkAsTaken(doseEvent, forceConfirm = true)
     }
 
     fun onSnackbarDismissed() {
