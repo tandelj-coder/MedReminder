@@ -152,17 +152,15 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun updateProfile(user: User): Result<Unit> {
         return try {
-            val data = hashMapOf(
-                "displayName" to user.displayName,
-                "phoneNumber" to user.phoneNumber,
-                "height" to user.height,
-                "weight" to user.weight,
-                "illness" to user.illness,
-                "photoUrl" to user.photoUrl,
-                "isProfileComplete" to true
-            )
+            val data = mutableMapOf<String, Any>("isProfileComplete" to true)
+            user.displayName?.let { data["displayName"] = it }
+            user.phoneNumber?.let { data["phoneNumber"] = it }
+            user.height?.let { data["height"] = it }
+            user.weight?.let { data["weight"] = it }
+            user.illness?.let { data["illness"] = it }
+            user.photoUrl?.let { data["photoUrl"] = it }
             firestore.collection("users").document(user.uid)
-                .set(data as Map<String, Any>, SetOptions.merge()).await()
+                .set(data, SetOptions.merge()).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
