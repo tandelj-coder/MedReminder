@@ -9,6 +9,8 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             DailyResetWorker.schedule(context)
             DoseEventGenerationWorker.scheduleOnAppStart(context)
+            DoseMissedDetectionWorker.scheduleImmediateRun(context)
+            DoseMissedDetectionWorker.schedule(context)
         }
     }
 }

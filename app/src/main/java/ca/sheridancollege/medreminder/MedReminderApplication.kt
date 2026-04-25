@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import ca.sheridancollege.medreminder.worker.DoseEventGenerationWorker
+import ca.sheridancollege.medreminder.worker.DoseMissedDetectionWorker
 import ca.sheridancollege.medreminder.worker.MedicationAlarmScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -18,6 +19,8 @@ class MedReminderApplication : Application(), Configuration.Provider {
         MedicationAlarmScheduler.createNotificationChannel(this)
         DoseEventGenerationWorker.scheduleOnAppStart(this)
         DoseEventGenerationWorker.scheduleDaily(this)
+        DoseMissedDetectionWorker.scheduleImmediateRun(this)
+        DoseMissedDetectionWorker.schedule(this)
     }
 
     override val workManagerConfiguration: Configuration
