@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.model.DoseEvent
 import ca.sheridancollege.medreminder.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -180,29 +180,29 @@ fun TodayScreen(
                     }
                 }
 
-                val pending = uiState.medications.filter { !it.isTakenToday }
-                val taken = uiState.medications.filter { it.isTakenToday }
+                val pending = uiState.doseEvents.filter { it.isScheduled() }
+                val taken = uiState.doseEvents.filter { it.isTaken() }
 
                 if (pending.isNotEmpty()) {
                     item { SectionHeader(title = "UPCOMING SESSIONS", color = RacingRed) }
-                    items(pending, key = { it.id }) { med ->
-                        SwipeablePaddockMedicationItem(
-                            medication = med,
-                            onSwipeConfirm = { viewModel.onMarkAsTaken(med) },
-                            onDelete = { viewModel.onDeleteMedication(med) },
-                            onEdit = { onEditMedication(med.id) }
+                    items(pending, key = { it.id }) { dose ->
+                        SwipeablePaddockDoseItem(
+                            doseEvent = dose,
+                            onSwipeConfirm = { viewModel.onMarkAsTaken(dose) },
+                            onDelete = { viewModel.onDeleteMedication(dose) },
+                            onEdit = { onEditMedication(dose.medicationId) }
                         )
                     }
                 }
 
                 if (taken.isNotEmpty()) {
                     item { SectionHeader(title = "COMPLETED LAPS", color = RacingTeal) }
-                    items(taken, key = { it.id }) { med ->
-                        SwipeablePaddockMedicationItem(
-                            medication = med,
-                            onSwipeConfirm = {}, // Already taken
-                            onDelete = { viewModel.onDeleteMedication(med) },
-                            onEdit = { onEditMedication(med.id) }
+                    items(taken, key = { it.id }) { dose ->
+                        SwipeablePaddockDoseItem(
+                            doseEvent = dose,
+                            onSwipeConfirm = {},
+                            onDelete = { viewModel.onDeleteMedication(dose) },
+                            onEdit = { onEditMedication(dose.medicationId) }
                         )
                     }
                 }
@@ -229,7 +229,7 @@ fun TodayScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.onConfirmDoubleDose(warning.medication) },
+                    onClick = { viewModel.onConfirmDoubleDose(warning.doseEvent) },
                     colors = ButtonDefaults.buttonColors(containerColor = RacingRed)
                 ) { Text("CONFIRM", fontWeight = FontWeight.Black, color = Color.White) }
             },
@@ -275,18 +275,19 @@ fun SectionHeader(title: String, color: Color) {
 }
 
 @Composable
-fun SwipeablePaddockMedicationItem(
-    medication: Medication,
+fun SwipeablePaddockDoseItem(
+    doseEvent: DoseEvent,
     onSwipeConfirm: () -> Unit,
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     val animatedOffset by animateFloatAsState(targetValue = offsetX)
-    val isTaken = medication.isTakenToday
+    val isTaken = doseEvent.isTaken()
+    val scheduledTime = SimpleDateFormat("h:mm a", Locale.getDefault())
+        .format(Date(doseEvent.scheduledTime))
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        // Swipe Backgrounds
         if (offsetX > 0 && !isTaken) {
             Box(Modifier.fillMaxSize().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(RacingTeal.copy(alpha = 0.2f)).padding(start = 24.dp), contentAlignment = Alignment.CenterStart) {
                 Icon(Icons.Default.Check, null, tint = RacingTeal)
@@ -318,8 +319,8 @@ fun SwipeablePaddockMedicationItem(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             ListItem(
-                headlineContent = { Text(medication.name.uppercase(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface) },
-                supportingContent = { Text("${medication.dosage} MG • ${medication.formattedTime()}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) },
+                headlineContent = { Text(doseEvent.medicationName.uppercase(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface) },
+                supportingContent = { Text(scheduledTime, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold) },
                 leadingContent = {
                     Box(
                         modifier = Modifier.size(52.dp).clip(CircleShape)
@@ -327,7 +328,7 @@ fun SwipeablePaddockMedicationItem(
                             .border(2.dp, if (isTaken) RacingTeal.copy(alpha = 0.3f) else RacingRed.copy(alpha = 0.3f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(medication.name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = if (isTaken) RacingTeal else RacingRed)
+                        Text(doseEvent.medicationName.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = if (isTaken) RacingTeal else RacingRed)
                     }
                 },
                 trailingContent = {

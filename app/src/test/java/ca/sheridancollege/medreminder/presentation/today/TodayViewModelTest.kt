@@ -1,14 +1,13 @@
 package ca.sheridancollege.medreminder.presentation.today
 
 import app.cash.turbine.test
+import ca.sheridancollege.medreminder.data.repository.DoseEventRepository
+import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.domain.model.AdherenceStats
-import ca.sheridancollege.medreminder.domain.model.DayOfWeek
-import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.model.DoseEvent
+import ca.sheridancollege.medreminder.domain.model.DoseStatus
 import ca.sheridancollege.medreminder.domain.usecase.DeleteMedicationUseCase
 import ca.sheridancollege.medreminder.domain.usecase.GetAdherenceStatsUseCase
-import ca.sheridancollege.medreminder.domain.usecase.GetTodayMedicationsUseCase
-import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenResult
-import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenUseCase
 import ca.sheridancollege.medreminder.domain.usecase.ResetDailyStatusUseCase
 import io.mockk.coEvery
 import io.mockk.every
@@ -30,35 +29,41 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodayViewModelTest {
 
-    private lateinit var getTodayMedications: GetTodayMedicationsUseCase
-    private lateinit var markAsTaken: MarkAsTakenUseCase
+    private lateinit var doseEventRepository: DoseEventRepository
+    private lateinit var medicationRepository: MedicationRepository
     private lateinit var getAdherenceStats: GetAdherenceStatsUseCase
     private lateinit var deleteMedication: DeleteMedicationUseCase
     private lateinit var resetDailyStatus: ResetDailyStatusUseCase
     private lateinit var viewModel: TodayViewModel
 
     private val testDispatcher = StandardTestDispatcher()
+    private val now = System.currentTimeMillis()
 
-    private val fakeMeds = listOf(
-        Medication(id = 1, name = "Vitamin D", dosage = "1000 IU",
-            timeHour = 8, timeMinute = 0, days = listOf(DayOfWeek.MON)),
-        Medication(id = 2, name = "Omega 3", dosage = "500mg",
-            timeHour = 12, timeMinute = 0, days = listOf(DayOfWeek.MON))
+    private val fakeDoseEvents = listOf(
+        DoseEvent(id = 1, medicationId = 10, medicationName = "Vitamin D",
+            scheduledTime = now + 60_000, status = DoseStatus.SCHEDULED,
+            createdAt = now, updatedAt = now),
+        DoseEvent(id = 2, medicationId = 20, medicationName = "Omega 3",
+            scheduledTime = now + 120_000, status = DoseStatus.SCHEDULED,
+            createdAt = now, updatedAt = now)
     )
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        getTodayMedications = mockk()
-        markAsTaken = mockk()
+        doseEventRepository = mockk()
+        medicationRepository = mockk()
         getAdherenceStats = mockk()
         deleteMedication = mockk()
         resetDailyStatus = mockk()
-        every { getTodayMedications() } returns flowOf(fakeMeds)
+        every { doseEventRepository.getDoseEventsForDay(any(), any()) } returns flowOf(fakeDoseEvents)
         every { getAdherenceStats() } returns flowOf(AdherenceStats(2, 0, 3))
         coEvery { deleteMedication(any()) } returns Unit
         coEvery { resetDailyStatus() } returns Unit
-        viewModel = TodayViewModel(getTodayMedications, markAsTaken, getAdherenceStats, deleteMedication, resetDailyStatus)
+        viewModel = TodayViewModel(
+            doseEventRepository, medicationRepository,
+            getAdherenceStats, deleteMedication, resetDailyStatus
+        )
     }
 
     @After
@@ -67,25 +72,27 @@ class TodayViewModelTest {
     }
 
     @Test
-    fun `uiState loads medications correctly`() = runTest {
+    fun `uiState loads dose events correctly`() = runTest {
         viewModel.uiState.test {
             testDispatcher.scheduler.advanceUntilIdle()
             val state = awaitItem()
-            assertEquals(2, state.medications.size)
-            assertEquals("Vitamin D", state.medications[0].name)
+            assertEquals(2, state.doseEvents.size)
+            assertEquals("Vitamin D", state.doseEvents[0].medicationName)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `uiState shows snackbar on success`() = runTest {
-        coEvery { markAsTaken(fakeMeds[0], false) } returns MarkAsTakenResult.Success
+    fun `onMarkAsTaken shows snackbar on success`() = runTest {
+        val dose = fakeDoseEvents[0]
+        coEvery { medicationRepository.getLastIntakeForMedication(dose.medicationId) } returns null
+        coEvery { doseEventRepository.markDoseAsTaken(dose.id, any()) } returns Result.success(Unit)
 
         viewModel.uiState.test {
             testDispatcher.scheduler.advanceUntilIdle()
             awaitItem() // loaded state
 
-            viewModel.onMarkAsTaken(fakeMeds[0])
+            viewModel.onMarkAsTaken(dose)
             testDispatcher.scheduler.advanceUntilIdle()
 
             val state = awaitItem()
@@ -95,40 +102,38 @@ class TodayViewModelTest {
     }
 
     @Test
-    fun `uiState shows double dose warning`() = runTest {
-        coEvery { markAsTaken(fakeMeds[0], false) } returns MarkAsTakenResult.DoubleDoseWarning(
-            medication = fakeMeds[0],
-            lastTakenAt = System.currentTimeMillis() - (60 * 60 * 1000),
-            minutesSinceLastDose = 60
-        )
+    fun `onMarkAsTaken shows double dose warning within 2 hours`() = runTest {
+        val dose = fakeDoseEvents[0]
+        val recentLog = mockk<ca.sheridancollege.medreminder.domain.model.IntakeLog>()
+        every { recentLog.takenAt } returns System.currentTimeMillis() - (60 * 60 * 1000) // 60 min ago
+        coEvery { medicationRepository.getLastIntakeForMedication(dose.medicationId) } returns recentLog
 
         viewModel.uiState.test {
             testDispatcher.scheduler.advanceUntilIdle()
             awaitItem()
 
-            viewModel.onMarkAsTaken(fakeMeds[0])
+            viewModel.onMarkAsTaken(dose)
             testDispatcher.scheduler.advanceUntilIdle()
 
             val state = awaitItem()
             assertNotNull(state.doubleDoseWarning)
-            assertEquals("Vitamin D", state.doubleDoseWarning!!.medication.name)
+            assertEquals(dose, state.doubleDoseWarning!!.doseEvent)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
     fun `dismissDoubleDoseWarning clears warning state`() = runTest {
-        coEvery { markAsTaken(fakeMeds[0], false) } returns MarkAsTakenResult.DoubleDoseWarning(
-            medication = fakeMeds[0],
-            lastTakenAt = System.currentTimeMillis(),
-            minutesSinceLastDose = 30
-        )
+        val dose = fakeDoseEvents[0]
+        val recentLog = mockk<ca.sheridancollege.medreminder.domain.model.IntakeLog>()
+        every { recentLog.takenAt } returns System.currentTimeMillis() - (30 * 60 * 1000) // 30 min ago
+        coEvery { medicationRepository.getLastIntakeForMedication(dose.medicationId) } returns recentLog
 
         viewModel.uiState.test {
             testDispatcher.scheduler.advanceUntilIdle()
             awaitItem()
 
-            viewModel.onMarkAsTaken(fakeMeds[0])
+            viewModel.onMarkAsTaken(dose)
             testDispatcher.scheduler.advanceUntilIdle()
             awaitItem() // warning state
 
