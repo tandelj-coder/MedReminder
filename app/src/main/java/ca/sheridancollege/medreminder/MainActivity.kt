@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
             // Collect as state — updates instantly when toggled in Settings
             val darkTheme by userPreferences.darkTheme.collectAsState(initial = initialDarkTheme)
 
-            MedReminderTheme(darkTheme = darkTheme, dynamicColor = false) {
+            MedReminderTheme(darkTheme = darkTheme) {
                 AppNavigation()
             }
         }

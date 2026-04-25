@@ -11,51 +11,36 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryLight,
-    onPrimary = OnPrimaryLight,
-    primaryContainer = PrimaryContainerLight,
-    onPrimaryContainer = OnPrimaryContainerLight,
-    secondary = SecondaryLight,
-    onSecondary = OnSecondaryLight,
-    secondaryContainer = SecondaryContainerLight,
-    onSecondaryContainer = OnSecondaryContainerLight,
-    tertiary = TertiaryLight,
-    onTertiary = OnTertiaryLight,
-    tertiaryContainer = TertiaryContainerLight,
-    onTertiaryContainer = OnTertiaryContainerLight,
+    primary = MedicalBlue,
+    onPrimary = OnMedicalBlue,
+    primaryContainer = MedicalBlueContainer,
+    onPrimaryContainer = OnMedicalBlueContainer,
+    surfaceVariant = SurfaceVariant,
     background = BackgroundLight,
     onBackground = OnBackgroundLight,
-    surface = SurfaceLight,
-    onSurface = OnSurfaceLight,
-    error = ErrorRose,
+    surface = Color.White,
+    onSurface = OnBackgroundLight,
+    error = Color(0xFFB00020),
     onError = Color.White
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryDark,
-    onPrimary = OnPrimaryDark,
-    primaryContainer = PrimaryContainerDark,
-    onPrimaryContainer = OnPrimaryContainerDark,
-    secondary = SecondaryDark,
-    onSecondary = OnSecondaryDark,
-    secondaryContainer = SecondaryContainerDark,
-    onSecondaryContainer = OnSecondaryContainerDark,
-    tertiary = TertiaryDark,
-    onTertiary = OnTertiaryDark,
-    tertiaryContainer = TertiaryContainerDark,
-    onTertiaryContainer = OnTertiaryContainerDark,
+    primary = MedicalBlue,
+    onPrimary = OnMedicalBlue,
+    primaryContainer = MedicalBlueContainer,
+    onPrimaryContainer = OnMedicalBlueContainer,
+    surfaceVariant = Color(0xFF1E1E1E),
     background = BackgroundDark,
     onBackground = OnBackgroundDark,
-    surface = SurfaceDark,
-    onSurface = OnSurfaceDark,
-    error = ErrorRose,
-    onError = Color.White
+    surface = Color(0xFF121212),
+    onSurface = OnBackgroundDark,
+    error = Color(0xFFCF6679),
+    onError = Color.Black
 )
 
 @Composable
 fun MedReminderTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -73,7 +58,6 @@ fun MedReminderTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = MedReminderTypography,
         content = content
     )
 }

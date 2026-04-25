@@ -1,7 +1,6 @@
 package ca.sheridancollege.medreminder.presentation.history
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,8 +22,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import ca.sheridancollege.medreminder.domain.model.DoseEvent
 import ca.sheridancollege.medreminder.domain.model.DoseStatus
-import ca.sheridancollege.medreminder.domain.model.IntakeLog
-import ca.sheridancollege.medreminder.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -44,16 +41,16 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
             Spacer(Modifier.height(32.dp))
             
             Text(
-                "LOGBOOK",
+                "HISTORY",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 2.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Session History",
+                "Logbook",
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             
@@ -63,7 +60,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                 uiState.isLoading -> Box(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = RacingRed, strokeWidth = 3.dp) }
+                ) { CircularProgressIndicator(strokeWidth = 3.dp) }
 
                 uiState.doseEvents.isEmpty() -> EmptyHistoryState()
 
@@ -73,7 +70,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                         contentPadding = PaddingValues(bottom = 32.dp)
                     ) {
                         items(uiState.doseEvents.filter { !it.isScheduled() }) { event ->
-                            PaddockHistoryCard(event)
+                            HistoryCard(event)
                         }
                     }
                 }
@@ -83,22 +80,19 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 }
 
 @Composable
-fun PaddockHistoryCard(event: DoseEvent) {
+fun HistoryCard(event: DoseEvent) {
     val isTaken = event.isTaken()
     val isMissed = event.isMissed()
-    val isSkipped = event.status == DoseStatus.SKIPPED
     
     val statusColor = when {
-        isTaken -> RacingTeal
-        isMissed -> RacingRed
-        isSkipped -> RacingOrange
+        isTaken -> MaterialTheme.colorScheme.primary
+        isMissed -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     val statusIcon = when {
         isTaken -> Icons.Outlined.CheckCircle
         isMissed -> Icons.Outlined.Warning
-        isSkipped -> Icons.Outlined.History // Placeholder for skipped
         else -> Icons.Outlined.History
     }
 
@@ -111,7 +105,7 @@ fun PaddockHistoryCard(event: DoseEvent) {
         color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(
             1.dp, 
-            statusColor.copy(alpha = 0.3f)
+            MaterialTheme.colorScheme.outlineVariant
         )
     ) {
         Row(
@@ -119,7 +113,6 @@ fun PaddockHistoryCard(event: DoseEvent) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // High-Contrast Status Icon
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -139,7 +132,7 @@ fun PaddockHistoryCard(event: DoseEvent) {
                 Text(
                     event.medicationName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
@@ -160,8 +153,7 @@ fun PaddockHistoryCard(event: DoseEvent) {
                     event.status.name,
                     style = MaterialTheme.typography.labelSmall,
                     color = statusColor,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -175,7 +167,7 @@ fun EmptyHistoryState() {
             Icon(Icons.Outlined.History, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
             Spacer(Modifier.height(16.dp))
             Text(
-                "No telemetry data.",
+                "No logs available.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium

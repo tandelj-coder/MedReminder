@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import ca.sheridancollege.medreminder.presentation.add.AddMedicationScreen
+import ca.sheridancollege.medreminder.presentation.garage.MedicationsScreen
 import ca.sheridancollege.medreminder.presentation.history.HistoryScreen
 import ca.sheridancollege.medreminder.presentation.today.TodayScreen
 
@@ -29,30 +30,25 @@ fun MedReminderNavHost(
         startDestination = startDestination
     ) {
         composable(Screen.Today.route) {
-            TodayScreen(
-                onEditMedication = { id: Int ->
-                    navController.navigate(Screen.AddMedication.createRoute(id))
-                }
-            )
+            TodayScreen()
         }
         composable(Screen.Medications.route) {
-            // Placeholder for Medications list if not yet fully implemented
+            MedicationsScreen(
+                onEditMedication = { id -> navController.navigate(Screen.AddMedication.createRoute(id)) },
+                onAddNewMedication = { navController.navigate(Screen.AddMedication.createRoute(null)) }
+            )
         }
         composable(Screen.History.route) {
             HistoryScreen()
         }
         composable(
             route = Screen.AddMedication.route,
-            arguments = listOf(
-                navArgument("medicationId") {
-                    type = NavType.StringType
-                    nullable = true
-                }
-            )
-        ) { backStackEntry ->
-            val medicationId = backStackEntry.arguments?.getString("medicationId")?.toIntOrNull()
+            arguments = listOf(navArgument("medicationId") {
+                type = NavType.StringType
+                nullable = true
+            })
+        ) { _ ->
             AddMedicationScreen(
-                medicationId = medicationId ?: -1,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
