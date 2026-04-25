@@ -10,7 +10,11 @@ import ca.sheridancollege.medreminder.data.repository.FirestoreSyncRepository
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 import ca.sheridancollege.medreminder.domain.model.IntakeLog
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.model.MedicationTime
+import ca.sheridancollege.medreminder.domain.model.MedicationType
 import ca.sheridancollege.medreminder.domain.model.PillShape
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +30,8 @@ class SyncWorker @AssistedInject constructor(
     private val doseEventDao: DoseEventDao,
     private val firestoreSyncRepository: FirestoreSyncRepository
 ) : CoroutineWorker(context, workerParams) {
+
+    private val gson = Gson()
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -66,10 +72,16 @@ class SyncWorker @AssistedInject constructor(
     private fun Medication.toEntity() = ca.sheridancollege.medreminder.data.local.entity.MedicationEntity(
         id = id,
         name = name,
-        dosage = dosage,
-        timeHour = timeHour,
-        timeMinute = timeMinute,
+        dosageAmount = dosageAmount,
+        dosageUnit = dosageUnit,
+        medicationType = medicationType.name,
+        timesJson = gson.toJson(times),
         days = DayOfWeek.toCodes(days),
+        startDate = startDate,
+        endDate = endDate,
+        instructions = instructions,
+        isAsNeeded = isAsNeeded,
+        maxPerDay = maxPerDay,
         isActive = isActive,
         notes = notes,
         pillColor = pillColor,
@@ -82,23 +94,33 @@ class SyncWorker @AssistedInject constructor(
         isSynced = true
     )
 
-    private fun ca.sheridancollege.medreminder.data.local.entity.MedicationEntity.toDomain() = Medication(
-        id = id,
-        name = name,
-        dosage = dosage,
-        timeHour = timeHour,
-        timeMinute = timeMinute,
-        days = DayOfWeek.fromCodes(days),
-        isActive = isActive,
-        notes = notes,
-        pillColor = pillColor,
-        pillShape = PillShape.valueOf(pillShape),
-        stockQuantity = stockQuantity,
-        remainingQuantity = remainingQuantity,
-        refillThreshold = refillThreshold,
-        nfcTagId = nfcTagId,
-        updatedAt = updatedAt
-    )
+    private fun ca.sheridancollege.medreminder.data.local.entity.MedicationEntity.toDomain(): Medication {
+        val timesType = object : TypeToken<List<MedicationTime>>() {}.type
+        val times: List<MedicationTime> = gson.fromJson(timesJson, timesType) ?: emptyList()
+        return Medication(
+            id = id,
+            name = name,
+            dosageAmount = dosageAmount,
+            dosageUnit = dosageUnit,
+            medicationType = MedicationType.valueOf(medicationType),
+            times = times,
+            days = DayOfWeek.fromCodes(days),
+            startDate = startDate,
+            endDate = endDate,
+            instructions = instructions,
+            isAsNeeded = isAsNeeded,
+            maxPerDay = maxPerDay,
+            isActive = isActive,
+            notes = notes,
+            pillColor = pillColor,
+            pillShape = PillShape.valueOf(pillShape),
+            stockQuantity = stockQuantity,
+            remainingQuantity = remainingQuantity,
+            refillThreshold = refillThreshold,
+            nfcTagId = nfcTagId,
+            updatedAt = updatedAt
+        )
+    }
 
     private fun ca.sheridancollege.medreminder.data.local.entity.IntakeLogEntity.toDomain() = IntakeLog(
         id = id,

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MedicationDao {
 
-    @Query("SELECT * FROM medications WHERE isActive = 1 ORDER BY timeHour, timeMinute")
+    @Query("SELECT * FROM medications WHERE isActive = 1")
     fun getAllActiveMedications(): Flow<List<MedicationEntity>>
 
     @Query("SELECT * FROM medications WHERE id = :id")
@@ -22,7 +22,7 @@ interface MedicationDao {
     @Delete
     suspend fun delete(medication: MedicationEntity)
 
-    @Query("SELECT * FROM medications WHERE isActive = 1 AND days LIKE '%' || :dayCode || '%' ORDER BY timeHour, timeMinute")
+    @Query("SELECT * FROM medications WHERE isActive = 1 AND days LIKE '%' || :dayCode || '%'")
     fun getMedicationsForDay(dayCode: String): Flow<List<MedicationEntity>>
 
     @Query("SELECT COUNT(*) FROM medications WHERE isActive = 1")

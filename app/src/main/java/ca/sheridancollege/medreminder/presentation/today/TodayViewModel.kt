@@ -141,21 +141,19 @@ class TodayViewModel @Inject constructor(
                 }
             }
 
-            val result = doseEventRepository.markDoseAsTaken(doseEvent.id, System.currentTimeMillis())
-            when {
-                result.isSuccess -> {
-                    _uiState.update {
-                        it.copy(
-                            doubleDoseWarning = null,
-                            snackbarMessage = "${doseEvent.medicationName} marked as taken ✓"
-                        )
-                    }
-                }
-                else -> {
-                    _uiState.update {
-                        it.copy(snackbarMessage = "Failed to mark as taken")
-                    }
-                }
+            val cal = Calendar.getInstance().apply { timeInMillis = doseEvent.scheduledTime }
+            medicationRepository.markAsTaken(
+                medicationId = doseEvent.medicationId,
+                timestamp = System.currentTimeMillis(),
+                scheduledHour = cal.get(Calendar.HOUR_OF_DAY),
+                scheduledMinute = cal.get(Calendar.MINUTE)
+            )
+
+            _uiState.update {
+                it.copy(
+                    doubleDoseWarning = null,
+                    snackbarMessage = "${doseEvent.medicationName} marked as taken ✓"
+                )
             }
         }
     }

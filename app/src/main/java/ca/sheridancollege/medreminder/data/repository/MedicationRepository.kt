@@ -21,9 +21,12 @@ interface MedicationRepository {
         scheduledMinute: Int
     )
     suspend fun resetAllDailyStatus()
+    suspend fun resetDoseEventsForDay(startOfDay: Long, endOfDay: Long)
     fun getAllLogs(): Flow<List<IntakeLog>>
     fun getLogsForDay(startOfDay: Long, endOfDay: Long): Flow<List<IntakeLog>>
     suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLog?
+
+    fun getAllDoseEvents(): Flow<List<DoseEvent>>
 
     suspend fun syncFromRemote(medications: List<Medication>, logs: List<IntakeLog>)
 

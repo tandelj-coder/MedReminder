@@ -3,37 +3,66 @@ package ca.sheridancollege.medreminder.domain.model
 data class Medication(
     val id: Int = 0,
     val name: String,
-    val dosage: String,
-    val timeHour: Int,
-    val timeMinute: Int,
+    val dosageAmount: Double,
+    val dosageUnit: String, // mg, ml, tablet
+    val medicationType: MedicationType = MedicationType.TABLET,
+    val times: List<MedicationTime>,
     val days: List<DayOfWeek>,
-    val isTakenToday: Boolean = false,
-    val takenTimestamp: Long? = null,
+    val startDate: Long = System.currentTimeMillis(),
+    val endDate: Long? = null,
+    val instructions: String? = null,
+    val isAsNeeded: Boolean = false,
+    val maxPerDay: Int? = null, // For PRN
     val isActive: Boolean = true,
     val notes: String = "",
+    
     // Visual Pill Features
-    val pillColor: String = "#2196F3", // Default Blue
+    val pillColor: String = "#2196F3",
     val pillShape: PillShape = PillShape.ROUND,
-    // Refill Tracking
+    
+    // Inventory Tracking
     val stockQuantity: Int = 0,
     val remainingQuantity: Int = 0,
     val refillThreshold: Int = 5,
-    // NFC Pairing
+    
+    // Sync and Meta
     val nfcTagId: String? = null,
     val updatedAt: Long = System.currentTimeMillis()
 ) {
-    fun formattedTime(): String {
-        val hour = if (timeHour == 0) 12 else if (timeHour > 12) timeHour - 12 else timeHour
-        val minute = String.format("%02d", timeMinute)
-        val amPm = if (timeHour < 12) "AM" else "PM"
-        return "$hour:$minute $amPm"
-    }
-
+    // Deprecated fields for transition or compatibility if needed
+    // val timeHour: Int, val timeMinute: Int, val dosage: String 
+    
     fun isScheduledForToday(): Boolean {
+        if (!isActive) return false
+        val now = System.currentTimeMillis()
+        if (now < startDate) return false
+        if (endDate != null && now > endDate) return false
+        
         val today = java.util.Calendar.getInstance()
             .get(java.util.Calendar.DAY_OF_WEEK)
         return days.any { it.calendarValue == today }
     }
+}
+
+data class MedicationTime(
+    val hour: Int,
+    val minute: Int
+) {
+    fun formatted(): String {
+        val h = if (hour == 0) 12 else if (hour > 12) hour - 12 else hour
+        val m = String.format("%02d", minute)
+        val amPm = if (hour < 12) "AM" else "PM"
+        return "$h:$m $amPm"
+    }
+}
+
+enum class MedicationType(val displayName: String) {
+    TABLET("Tablet"),
+    CAPSULE("Capsule"),
+    SYRUP("Syrup"),
+    INJECTION("Injection"),
+    CREAM("Cream"),
+    OTHER("Other")
 }
 
 enum class PillShape(val displayName: String) {

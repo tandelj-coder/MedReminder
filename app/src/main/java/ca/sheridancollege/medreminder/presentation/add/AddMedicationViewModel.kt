@@ -8,6 +8,8 @@ import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 import ca.sheridancollege.medreminder.domain.model.DrugSuggestion
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.model.MedicationTime
+import ca.sheridancollege.medreminder.domain.model.MedicationType
 import ca.sheridancollege.medreminder.domain.usecase.AddMedicationUseCase
 import ca.sheridancollege.medreminder.worker.MedicationAlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,16 +25,24 @@ import javax.inject.Inject
 
 data class AddMedicationUiState(
     val name: String = "",
-    val dosage: String = "",
-    val timeHour: Int = 8,
-    val timeMinute: Int = 0,
-    val selectedDays: List<DayOfWeek> = emptyList(),
+    val dosageAmount: String = "",
+    val dosageUnit: String = "mg",
+    val medicationType: MedicationType = MedicationType.TABLET,
+    val times: List<MedicationTime> = listOf(MedicationTime(8, 0)),
+    val selectedDays: List<DayOfWeek> = DayOfWeek.entries,
+    val instructions: String = "",
     val notes: String = "",
+    val startDate: Long = System.currentTimeMillis(),
+    val endDate: Long? = null,
+    val isAsNeeded: Boolean = false,
+    val maxPerDay: String = "",
+    
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val nameError: String? = null,
     val daysError: String? = null,
     val isEditMode: Boolean = false,
+    
     // Drug search
     val drugSuggestions: List<DrugSuggestion> = emptyList(),
     val isSearching: Boolean = false,
@@ -61,11 +71,17 @@ class AddMedicationViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     name = med.name,
-                    dosage = med.dosage,
-                    timeHour = med.timeHour,
-                    timeMinute = med.timeMinute,
+                    dosageAmount = med.dosageAmount.toString(),
+                    dosageUnit = med.dosageUnit,
+                    medicationType = med.medicationType,
+                    times = med.times,
                     selectedDays = med.days,
+                    instructions = med.instructions ?: "",
                     notes = med.notes,
+                    startDate = med.startDate,
+                    endDate = med.endDate,
+                    isAsNeeded = med.isAsNeeded,
+                    maxPerDay = med.maxPerDay?.toString() ?: "",
                     isEditMode = true
                 )
             }
@@ -77,9 +93,37 @@ class AddMedicationViewModel @Inject constructor(
         triggerDrugSearch(value)
     }
 
-    fun onDosageChange(value: String) = _uiState.update { it.copy(dosage = value) }
-    fun onTimeChange(hour: Int, minute: Int) = _uiState.update { it.copy(timeHour = hour, timeMinute = minute) }
+    fun onDosageAmountChange(value: String) = _uiState.update { it.copy(dosageAmount = value) }
+    fun onDosageUnitChange(value: String) = _uiState.update { it.copy(dosageUnit = value) }
+    fun onMedicationTypeChange(type: MedicationType) = _uiState.update { it.copy(medicationType = type) }
+    
+    fun onAddTime() {
+        _uiState.update { it.copy(times = it.times + MedicationTime(12, 0)) }
+    }
+    
+    fun onRemoveTime(index: Int) {
+        _uiState.update { 
+            val newTimes = it.times.toMutableList()
+            if (newTimes.size > 1) {
+                newTimes.removeAt(index)
+            }
+            it.copy(times = newTimes)
+        }
+    }
+
+    fun onTimeChange(index: Int, hour: Int, minute: Int) {
+        _uiState.update { 
+            val newTimes = it.times.toMutableList()
+            newTimes[index] = MedicationTime(hour, minute)
+            it.copy(times = newTimes)
+        }
+    }
+
+    fun onInstructionsChange(value: String) = _uiState.update { it.copy(instructions = value) }
     fun onNotesChange(value: String) = _uiState.update { it.copy(notes = value) }
+    
+    fun onStartDateChange(date: Long) = _uiState.update { it.copy(startDate = date) }
+    fun onEndDateChange(date: Long?) = _uiState.update { it.copy(endDate = date) }
 
     fun onDayToggled(day: DayOfWeek) {
         val current = _uiState.value.selectedDays.toMutableList()
@@ -124,24 +168,34 @@ class AddMedicationViewModel @Inject constructor(
             val medication = Medication(
                 id = editingId,
                 name = state.name.trim(),
-                dosage = state.dosage.trim(),
-                timeHour = state.timeHour,
-                timeMinute = state.timeMinute,
+                dosageAmount = state.dosageAmount.toDoubleOrNull() ?: 0.0,
+                dosageUnit = state.dosageUnit,
+                medicationType = state.medicationType,
+                times = state.times,
                 days = state.selectedDays,
+                startDate = state.startDate,
+                endDate = state.endDate,
+                instructions = state.instructions.trim().ifBlank { null },
+                isAsNeeded = state.isAsNeeded,
+                maxPerDay = state.maxPerDay.toIntOrNull(),
                 notes = state.notes.trim()
             )
+            
             if (state.isEditMode) {
                 repository.updateMedication(medication)
             } else {
                 val id = addMedication(medication)
-                MedicationAlarmScheduler.schedule(
-                    context = context,
-                    medicationId = id.toInt(),
-                    medicationName = medication.name,
-                    dosage = medication.dosage,
-                    hour = medication.timeHour,
-                    minute = medication.timeMinute
-                )
+                // Schedule alarms for each time
+                state.times.forEach { time ->
+                    MedicationAlarmScheduler.schedule(
+                        context = context,
+                        medicationId = id.toInt(),
+                        medicationName = medication.name,
+                        dosage = "${medication.dosageAmount} ${medication.dosageUnit}",
+                        hour = time.hour,
+                        minute = time.minute
+                    )
+                }
             }
             _uiState.update { it.copy(isSaving = false, isSaved = true) }
         }

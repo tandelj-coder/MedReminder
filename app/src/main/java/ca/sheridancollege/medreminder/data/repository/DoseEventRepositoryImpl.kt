@@ -6,6 +6,9 @@ import ca.sheridancollege.medreminder.data.local.entity.DoseEventEntity
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 import ca.sheridancollege.medreminder.domain.model.DoseEvent
 import ca.sheridancollege.medreminder.domain.model.DoseStatus
+import ca.sheridancollege.medreminder.domain.model.MedicationTime
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
@@ -18,6 +21,8 @@ class DoseEventRepositoryImpl @Inject constructor(
     private val medicationDao: MedicationDao,
     private val firestoreSyncRepository: FirestoreSyncRepository
 ) : DoseEventRepository {
+
+    private val gson = Gson()
 
     override suspend fun createDoseEvent(
         medicationId: Int,
@@ -116,13 +121,16 @@ class DoseEventRepositoryImpl @Inject constructor(
 
     override suspend fun generateFutureEvents(medicationId: Int, daysAhead: Int): Result<Int> {
         return try {
-            val medication = medicationDao.getMedicationById(medicationId)
+            val medicationEntity = medicationDao.getMedicationById(medicationId)
                 ?: return Result.failure(Exception("Medication not found"))
 
-            val days = DayOfWeek.fromCodes(medication.days)
+            val days = DayOfWeek.fromCodes(medicationEntity.days)
             if (days.isEmpty()) {
                 return Result.failure(Exception("Medication has no scheduled days"))
             }
+
+            val timesType = object : TypeToken<List<MedicationTime>>() {}.type
+            val times: List<MedicationTime> = gson.fromJson(medicationEntity.timesJson, timesType) ?: emptyList()
 
             val now = System.currentTimeMillis()
             val calendar = Calendar.getInstance().apply { timeInMillis = now }
@@ -133,15 +141,18 @@ class DoseEventRepositoryImpl @Inject constructor(
                     .find { it.calendarValue == calendar.get(Calendar.DAY_OF_WEEK) }
 
                 if (dayOfWeek != null && days.contains(dayOfWeek)) {
-                    val scheduledTime = calendar.apply {
-                        set(Calendar.HOUR_OF_DAY, medication.timeHour)
-                        set(Calendar.MINUTE, medication.timeMinute)
-                        set(Calendar.SECOND, 0)
-                    }.timeInMillis
+                    for (time in times) {
+                        val scheduledTime = calendar.apply {
+                            set(Calendar.HOUR_OF_DAY, time.hour)
+                            set(Calendar.MINUTE, time.minute)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }.timeInMillis
 
-                    if (scheduledTime >= now) {
-                        createDoseEvent(medicationId, medication.name, scheduledTime)
-                        eventsCreated++
+                        if (scheduledTime >= now) {
+                            createDoseEvent(medicationId, medicationEntity.name, scheduledTime)
+                            eventsCreated++
+                        }
                     }
                 }
 
@@ -153,6 +164,11 @@ class DoseEventRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override fun getAllEvents(): Flow<List<DoseEvent>> =
+        doseEventDao.getAllEvents().map { events ->
+            events.map { it.toDomain() }
+        }
 
     // ─── Mappers ─────────────────────────────────────────────
 

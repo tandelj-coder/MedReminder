@@ -23,6 +23,12 @@ object MedicationAlarmScheduler {
     const val KEY_HOUR        = "hour"
     const val KEY_MINUTE      = "minute"
 
+    private fun getRequestCode(medicationId: Int, hour: Int, minute: Int): Int {
+        // Simple way to generate unique request code for different times of the same med
+        // Assuming medId < 100000
+        return medicationId * 10000 + hour * 100 + minute
+    }
+
     fun schedule(
         context: Context,
         medicationId: Int,
@@ -41,9 +47,10 @@ object MedicationAlarmScheduler {
             it.putExtra(KEY_MINUTE,    minute)
         }
 
+        val requestCode = getRequestCode(medicationId, hour, minute)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            medicationId,
+            requestCode,
             alarmIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -55,26 +62,24 @@ object MedicationAlarmScheduler {
                 AlarmManager.AlarmClockInfo(triggerTime, pendingIntent),
                 pendingIntent
             )
-        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            alarmManager.setAlarmClock(
-                AlarmManager.AlarmClockInfo(triggerTime, pendingIntent),
-                pendingIntent
-            )
         } else {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
         }
     }
 
-    fun cancel(context: Context, medicationId: Int) {
+    fun cancelAllForMedication(context: Context, medicationId: Int, times: List<Pair<Int, Int>>) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, MedicationAlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            medicationId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
+        times.forEach { (hour, minute) ->
+            val intent = Intent(context, MedicationAlarmReceiver::class.java)
+            val requestCode = getRequestCode(medicationId, hour, minute)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.cancel(pendingIntent)
+        }
     }
 
     fun nextOccurrence(hour: Int, minute: Int): Long {
@@ -92,8 +97,6 @@ object MedicationAlarmScheduler {
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            listOf("medication_reminders", "medication_reminders_v2", "medication_reminders_v3")
-                .forEach { manager.deleteNotificationChannel(it) }
             if (manager.getNotificationChannel(CHANNEL_ID) != null) return
 
             val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.med_reminder}")
@@ -121,8 +124,10 @@ object MedicationAlarmScheduler {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.med_reminder}")
 
+        val notificationId = getRequestCode(medId, hour, minute)
+
         val openIntent = PendingIntent.getActivity(
-            context, medId,
+            context, notificationId,
             Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 putExtra("medicationId", medId)
@@ -138,7 +143,7 @@ object MedicationAlarmScheduler {
             i.putExtra(KEY_HOUR, hour)
             i.putExtra(KEY_MINUTE, minute)
             PendingIntent.getBroadcast(
-                context, medId + 10000, i,
+                context, notificationId + 1000000, i,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }
@@ -149,8 +154,10 @@ object MedicationAlarmScheduler {
             i.putExtra(KEY_MED_ID, medId)
             i.putExtra(KEY_MED_NAME, medName)
             i.putExtra(KEY_MED_DOSAGE, dosage)
+            i.putExtra(KEY_HOUR, hour)
+            i.putExtra(KEY_MINUTE, minute)
             PendingIntent.getBroadcast(
-                context, medId + 20000, i,
+                context, notificationId + 2000000, i,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }
@@ -171,12 +178,11 @@ object MedicationAlarmScheduler {
             .setSound(soundUri)
             .setVibrate(longArrayOf(0, 400, 200, 400, 200, 600))
             .setColor(0xFF00BCD4.toInt())
-            .setColorized(true)
             .addAction(android.R.drawable.checkbox_on_background, "✓ Mark Taken", takenAction)
             .addAction(android.R.drawable.ic_menu_recent_history, "⏰ Snooze 10min", snoozeAction)
             .setFullScreenIntent(openIntent, true)
             .build()
 
-        manager.notify(medId, notification)
+        manager.notify(notificationId, notification)
     }
 }

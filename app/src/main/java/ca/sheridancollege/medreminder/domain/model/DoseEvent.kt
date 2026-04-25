@@ -26,5 +26,6 @@ enum class DoseStatus {
     SCHEDULED,
     TAKEN,
     MISSED,
-    SNOOZED
+    SNOOZED,
+    SKIPPED
 }
