@@ -92,7 +92,9 @@ class SettingsViewModel @Inject constructor(
             context = context,
             medId = 9999,
             medName = "Test Medication",
-            dosage = "1 tablet"
+            dosage = "1 tablet",
+            hour = 12,
+            minute = 0
         )
     }
 }

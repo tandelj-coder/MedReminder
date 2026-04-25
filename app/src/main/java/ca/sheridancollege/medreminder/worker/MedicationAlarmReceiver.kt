@@ -12,7 +12,7 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
         val hour    = intent.getIntExtra(MedicationAlarmScheduler.KEY_HOUR, 0)
         val minute  = intent.getIntExtra(MedicationAlarmScheduler.KEY_MINUTE, 0)
 
-        MedicationAlarmScheduler.showNotification(context, medId, medName, dosage)
+        MedicationAlarmScheduler.showNotification(context, medId, medName, dosage, hour, minute)
 
         // Reschedule for tomorrow
         if (hour >= 0) {

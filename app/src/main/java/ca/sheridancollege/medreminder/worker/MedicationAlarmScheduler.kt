@@ -116,7 +116,7 @@ object MedicationAlarmScheduler {
         }
     }
 
-    fun showNotification(context: Context, medId: Int, medName: String, dosage: String) {
+    fun showNotification(context: Context, medId: Int, medName: String, dosage: String, hour: Int, minute: Int) {
         createNotificationChannel(context)
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.med_reminder}")
@@ -135,6 +135,8 @@ object MedicationAlarmScheduler {
             i.action = NotificationActionReceiver.ACTION_MARK_TAKEN
             i.putExtra(KEY_MED_ID, medId)
             i.putExtra(KEY_MED_NAME, medName)
+            i.putExtra(KEY_HOUR, hour)
+            i.putExtra(KEY_MINUTE, minute)
             PendingIntent.getBroadcast(
                 context, medId + 10000, i,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
