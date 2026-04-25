@@ -122,21 +122,23 @@ fun MedicationItem(
                 "Dosage: ${medication.dosageAmount} ${medication.dosageUnit}",
                 style = MaterialTheme.typography.bodyMedium
             )
-            Text(
-                "Stock: ${medication.remainingQuantity} / ${medication.stockQuantity}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            AnimatedVisibility(
-                visible = medication.remainingQuantity <= medication.refillThreshold,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
+            if (medication.stockQuantity > 0) {
                 Text(
-                    "Refill needed soon",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp)
+                    "Stock: ${medication.remainingQuantity} / ${medication.stockQuantity}",
+                    style = MaterialTheme.typography.bodyMedium
                 )
+                AnimatedVisibility(
+                    visible = medication.remainingQuantity <= medication.refillThreshold,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    Text(
+                        "Refill needed soon",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }

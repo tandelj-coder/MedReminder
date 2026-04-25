@@ -56,11 +56,6 @@ fun AppNavigation() {
                 }
             }
         },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate(Screen.Add.route) }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Medication")
-            }
-        }
     ) { innerPadding ->
         NavHost(navController, startDestination = Screen.Today.route, modifier = Modifier.padding(innerPadding)) {
             composable(Screen.Today.route) { TodayScreen() }

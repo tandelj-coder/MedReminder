@@ -37,7 +37,8 @@ data class AddMedicationUiState(
     val endDate: Long? = null,
     val isAsNeeded: Boolean = false,
     val maxPerDay: String = "",
-    
+    val stockQuantity: String = "",
+
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val nameError: String? = null,
@@ -83,6 +84,7 @@ class AddMedicationViewModel @Inject constructor(
                     endDate = med.endDate,
                     isAsNeeded = med.isAsNeeded,
                     maxPerDay = med.maxPerDay?.toString() ?: "",
+                    stockQuantity = if (med.stockQuantity > 0) med.stockQuantity.toString() else "",
                     isEditMode = true
                 )
             }
@@ -120,6 +122,7 @@ class AddMedicationViewModel @Inject constructor(
         }
     }
 
+    fun onStockQuantityChange(value: String) = _uiState.update { it.copy(stockQuantity = value.filter { c -> c.isDigit() }) }
     fun onInstructionsChange(value: String) = _uiState.update { it.copy(instructions = value) }
     fun onNotesChange(value: String) = _uiState.update { it.copy(notes = value) }
     
@@ -166,6 +169,7 @@ class AddMedicationViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
+            val stock = state.stockQuantity.toIntOrNull() ?: 0
             val medication = Medication(
                 id = editingId,
                 name = state.name.trim(),
@@ -179,7 +183,14 @@ class AddMedicationViewModel @Inject constructor(
                 instructions = state.instructions.trim().ifBlank { null },
                 isAsNeeded = state.isAsNeeded,
                 maxPerDay = state.maxPerDay.toIntOrNull(),
-                notes = state.notes.trim()
+                notes = state.notes.trim(),
+                stockQuantity = stock,
+                remainingQuantity = if (state.isEditMode) {
+                    // preserve remaining on edit; only reset if user changed the stock value
+                    stock
+                } else {
+                    stock
+                }
             )
             
             if (state.isEditMode) {
