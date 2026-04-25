@@ -2,13 +2,12 @@ package ca.sheridancollege.medreminder.data.local.dao
 
 import androidx.room.*
 import ca.sheridancollege.medreminder.data.local.entity.DoseEventEntity
-import ca.sheridancollege.medreminder.data.local.entity.DoseStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DoseEventDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(event: DoseEventEntity): Long
 
     @Update

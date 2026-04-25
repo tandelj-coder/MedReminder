@@ -18,7 +18,8 @@ interface MedicationRepository {
         medicationId: Int,
         timestamp: Long,
         scheduledHour: Int,
-        scheduledMinute: Int
+        scheduledMinute: Int,
+        doseEventId: Int? = null
     )
     suspend fun markAsSkipped(
         medicationId: Int,

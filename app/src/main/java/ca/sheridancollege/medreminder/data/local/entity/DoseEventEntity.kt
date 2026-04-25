@@ -15,6 +15,7 @@ import androidx.room.PrimaryKey
     )],
     indices = [
         Index(value = ["medicationId"]),
+        Index(value = ["medicationId", "scheduledTime"], unique = true),
         Index(value = ["scheduledTime"]),
         Index(value = ["status"])
     ]
@@ -31,10 +32,3 @@ data class DoseEventEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false
 )
-
-enum class DoseStatus {
-    SCHEDULED,
-    TAKEN,
-    MISSED,
-    SNOOZED
-}

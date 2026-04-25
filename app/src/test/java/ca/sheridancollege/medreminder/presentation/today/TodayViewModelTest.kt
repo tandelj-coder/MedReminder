@@ -58,6 +58,7 @@ class TodayViewModelTest {
         resetDailyStatus = mockk()
         every { doseEventRepository.getDoseEventsForDay(any(), any()) } returns flowOf(fakeDoseEvents)
         every { getAdherenceStats() } returns flowOf(AdherenceStats(2, 0, 3))
+        every { medicationRepository.getAllActiveMedications() } returns flowOf(emptyList())
         coEvery { deleteMedication(any()) } returns Unit
         coEvery { resetDailyStatus() } returns Unit
         viewModel = TodayViewModel(
@@ -86,7 +87,7 @@ class TodayViewModelTest {
     fun `onMarkAsTaken shows snackbar on success`() = runTest {
         val dose = fakeDoseEvents[0]
         coEvery { medicationRepository.getLastIntakeForMedication(dose.medicationId) } returns null
-        coEvery { doseEventRepository.markDoseAsTaken(dose.id, any()) } returns Result.success(Unit)
+        coEvery { medicationRepository.markAsTaken(any(), any(), any(), any(), any()) } returns Unit
 
         viewModel.uiState.test {
             testDispatcher.scheduler.advanceUntilIdle()
