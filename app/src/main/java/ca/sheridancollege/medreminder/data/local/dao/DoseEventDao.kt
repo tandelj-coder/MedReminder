@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DoseEventDao {
 
+    @Query("SELECT * FROM dose_events WHERE medicationId = :medicationId AND scheduledTime = :scheduledTime LIMIT 1")
+    suspend fun getByMedicationAndScheduledTime(medicationId: Int, scheduledTime: Long): DoseEventEntity?
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(event: DoseEventEntity): Long
 

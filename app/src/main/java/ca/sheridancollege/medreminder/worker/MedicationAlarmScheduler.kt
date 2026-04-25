@@ -16,7 +16,8 @@ import java.util.Calendar
 
 object MedicationAlarmScheduler {
 
-    const val CHANNEL_ID   = "med_reminders_v4"
+    const val CHANNEL_ID   = "med_reminders_v5"
+    private const val CHANNEL_ID_LEGACY = "med_reminders_v4"
     const val KEY_MED_ID   = "med_id"
     const val KEY_MED_NAME = "med_name"
     const val KEY_DOSE_ID  = "dose_id"
@@ -25,6 +26,7 @@ object MedicationAlarmScheduler {
 
     fun createNotificationChannel(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.deleteNotificationChannel(CHANNEL_ID_LEGACY)
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
 
         val soundUri = "android.resource://${context.packageName}/${R.raw.med_reminder}".toUri()

@@ -15,7 +15,6 @@ import ca.sheridancollege.medreminder.domain.model.PillShape
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
@@ -39,13 +38,10 @@ class MedicationRepositoryImpl @Inject constructor(
             list.map { it.toDomain() }
         }
 
-    override fun getMedicationsForDay(dayCode: String): Flow<List<Medication>> {
-        val (startOfDay, endOfDay) = todayRange()
-        return medicationDao.getMedicationsForDay(dayCode)
-            .combine(intakeLogDao.getLogsForDay(startOfDay, endOfDay)) { meds, _ ->
-                meds.map { entity -> entity.toDomain() }
-            }
-    }
+    override fun getMedicationsForDay(dayCode: String): Flow<List<Medication>> =
+        medicationDao.getMedicationsForDay(dayCode).map { meds ->
+            meds.map { entity -> entity.toDomain() }
+        }
 
     override fun getTakenCountToday(): Flow<Int> {
         val (startOfDay, endOfDay) = todayRange()

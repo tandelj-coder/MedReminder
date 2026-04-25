@@ -36,7 +36,11 @@ class DoseEventRepositoryImpl @Inject constructor(
             status = DoseStatus.SCHEDULED.name,
             isSynced = false
         )
-        return doseEventDao.insert(entity)
+        val inserted = doseEventDao.insert(entity)
+        if (inserted != -1L) return inserted
+        // Duplicate (medicationId, scheduledTime) – return the existing row's id
+        return doseEventDao.getByMedicationAndScheduledTime(medicationId, scheduledTime)
+            ?.id?.toLong() ?: -1L
     }
 
     override suspend fun getDoseEventById(id: Int): DoseEvent? =
