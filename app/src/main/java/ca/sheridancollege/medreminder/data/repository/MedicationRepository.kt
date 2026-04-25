@@ -1,5 +1,6 @@
 package ca.sheridancollege.medreminder.data.repository
 
+import ca.sheridancollege.medreminder.domain.model.DoseEvent
 import ca.sheridancollege.medreminder.domain.model.IntakeLog
 import ca.sheridancollege.medreminder.domain.model.Medication
 import kotlinx.coroutines.flow.Flow
@@ -23,4 +24,7 @@ interface MedicationRepository {
     fun getAllLogs(): Flow<List<IntakeLog>>
     fun getLogsForDay(startOfDay: Long, endOfDay: Long): Flow<List<IntakeLog>>
     suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLog?
+
+    fun getTodayDoseEvents(startOfDay: Long, endOfDay: Long): Flow<List<DoseEvent>>
+    suspend fun generateDoseEventsForToday(): Result<Int>
 }

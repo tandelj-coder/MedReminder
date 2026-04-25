@@ -5,11 +5,14 @@ import ca.sheridancollege.medreminder.data.local.dao.MedicationDao
 import ca.sheridancollege.medreminder.data.local.entity.IntakeLogEntity
 import ca.sheridancollege.medreminder.data.local.entity.MedicationEntity
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
+import ca.sheridancollege.medreminder.domain.model.DoseEvent
 import ca.sheridancollege.medreminder.domain.model.IntakeLog
 import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.domain.model.PillShape
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
 import javax.inject.Inject
@@ -19,6 +22,7 @@ import javax.inject.Singleton
 class MedicationRepositoryImpl @Inject constructor(
     private val medicationDao: MedicationDao,
     private val intakeLogDao: IntakeLogDao,
+    private val doseEventRepository: DoseEventRepository,
     private val firestoreSyncRepository: FirestoreSyncRepository
 ) : MedicationRepository {
 
@@ -69,6 +73,7 @@ class MedicationRepositoryImpl @Inject constructor(
     override suspend fun deleteMedication(medication: Medication) {
         medicationDao.delete(medication.toEntity())
         intakeLogDao.deleteLogsForMedication(medication.id)
+        doseEventRepository.deleteUnresolvedEventsForMedication(medication.id)
         firestoreSyncRepository.deleteMedication(medication.id)
     }
 
@@ -105,7 +110,23 @@ class MedicationRepositoryImpl @Inject constructor(
             )
         )
 
+        markDoseEventAsTaken(medicationId, timestamp)
         firestoreSyncRepository.uploadMedication(entity.toDomain())
+    }
+
+    private suspend fun markDoseEventAsTaken(medicationId: Int, takenAt: Long) {
+        val (startOfDay, endOfDay) = todayRange()
+        try {
+            val doseEvent = doseEventRepository
+                .getDoseEventsForMedicationOnDay(medicationId, startOfDay, endOfDay)
+                .map { events -> events.firstOrNull { it.isScheduled() } }
+                .filterNotNull()
+                .first()
+
+            doseEventRepository.markDoseAsTaken(doseEvent.id, takenAt)
+        } catch (e: Exception) {
+            // Dose event may not exist yet; that's okay during transition phase
+        }
     }
 
     override suspend fun resetAllDailyStatus() {
@@ -123,6 +144,25 @@ class MedicationRepositoryImpl @Inject constructor(
 
     override suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLog? =
         intakeLogDao.getLastIntakeForMedication(medicationId)?.toDomain()
+
+    // ─── Dose Events (Phase 2 Integration) ──────────────────────────
+
+    override fun getTodayDoseEvents(startOfDay: Long, endOfDay: Long): Flow<List<DoseEvent>> =
+        doseEventRepository.getDoseEventsForDay(startOfDay, endOfDay)
+
+    override suspend fun generateDoseEventsForToday(): Result<Int> {
+        val medicationList = medicationDao.getAllActiveMedications().first()
+        var totalCreated = 0
+
+        for (medication in medicationList) {
+            val result = doseEventRepository.generateFutureEvents(medication.id, daysAhead = 1)
+            if (result.isSuccess) {
+                totalCreated += result.getOrDefault(0)
+            }
+        }
+
+        return Result.success(totalCreated)
+    }
 
     // ─── Helpers ────────────────────────────────────────────────────
 
