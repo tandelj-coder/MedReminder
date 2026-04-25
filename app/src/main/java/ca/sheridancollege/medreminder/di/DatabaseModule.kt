@@ -32,4 +32,7 @@ object DatabaseModule {
 
     @Provides
     fun provideDoseEventDao(db: MedicationDatabase) = db.doseEventDao()
+
+    @Provides
+    fun provideDrugSuggestionDao(db: MedicationDatabase) = db.drugSuggestionDao()
 }
