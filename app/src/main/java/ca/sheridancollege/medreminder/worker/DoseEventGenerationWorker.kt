@@ -7,11 +7,13 @@ import ca.sheridancollege.medreminder.data.repository.DoseEventRepository
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.first
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class DoseEventGenerationWorker @AssistedInject constructor(
-    @Assisted context: Context,
+    @Assisted private val context: Context,
     @Assisted params: WorkerParameters,
     private val doseEventRepository: DoseEventRepository,
     private val medicationRepository: MedicationRepository
@@ -37,12 +39,13 @@ class DoseEventGenerationWorker @AssistedInject constructor(
         }
 
         fun scheduleDaily(context: Context) {
-            val now = java.util.Calendar.getInstance()
-            val midnight = java.util.Calendar.getInstance().apply {
-                set(java.util.Calendar.HOUR_OF_DAY, 0)
-                set(java.util.Calendar.MINUTE, 0)
-                set(java.util.Calendar.SECOND, 0)
-                add(java.util.Calendar.DAY_OF_MONTH, 1)
+            val now = Calendar.getInstance()
+            val midnight = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                add(Calendar.DAY_OF_MONTH, 1)
             }
             val delay = midnight.timeInMillis - now.timeInMillis
 
@@ -66,6 +69,22 @@ class DoseEventGenerationWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             medicationRepository.generateDoseEventsForToday()
+            
+            val now = Calendar.getInstance()
+            val startOfDay = now.apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val endOfDay = startOfDay + TimeUnit.DAYS.toMillis(1) - 1
+
+            val doses = doseEventRepository.getDoseEventsForDay(startOfDay, endOfDay).first()
+            
+            doses.filter { it.isScheduled() }.forEach { dose ->
+                MedicationAlarmScheduler.schedule(context, dose)
+            }
+
             Result.success()
         } catch (e: Exception) {
             Result.retry()

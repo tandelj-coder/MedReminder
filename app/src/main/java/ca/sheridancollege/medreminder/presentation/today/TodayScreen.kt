@@ -378,7 +378,6 @@ fun EmptyTodayState() {
         }
     }
 }
-}
 
 @Composable
 fun TelemetryCard(modifier: Modifier = Modifier, label: String, value: String, unit: String, color: Color, icon: String) {

@@ -249,7 +249,7 @@ fun EmergencyScreen(viewModel: EmergencyViewModel = hiltViewModel()) {
                                 verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(6.dp).clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.primary))
-                                Text("${med.name} · ${med.dosage} · ${med.formattedTime()}",
+                                Text("${med.name} · ${med.dosageAmount} ${med.dosageUnit} · ${med.times.joinToString { it.formatted() }}",
                                     style = MaterialTheme.typography.bodySmall)
                             }
                         }

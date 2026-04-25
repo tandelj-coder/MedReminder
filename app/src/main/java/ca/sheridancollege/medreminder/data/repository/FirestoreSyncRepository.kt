@@ -39,9 +39,9 @@ class FirestoreSyncRepository @Inject constructor(
         val data = hashMapOf(
             "id" to medication.id,
             "name" to medication.name,
-            "dosage" to medication.dosage,
-            "timeHour" to medication.timeHour,
-            "timeMinute" to medication.timeMinute,
+            "dosageAmount" to medication.dosageAmount,
+            "dosageUnit" to medication.dosageUnit,
+            "times" to medication.times.map { mapOf("hour" to it.hour, "minute" to it.minute) },
             "days" to medication.days.map { it.code },
             "notes" to medication.notes,
             "isActive" to medication.isActive,
@@ -88,9 +88,15 @@ class FirestoreSyncRepository @Inject constructor(
                 Medication(
                     id = (doc.getLong("id") ?: 0L).toInt(),
                     name = doc.getString("name") ?: "",
-                    dosage = doc.getString("dosage") ?: "",
-                    timeHour = (doc.getLong("timeHour") ?: 0L).toInt(),
-                    timeMinute = (doc.getLong("timeMinute") ?: 0L).toInt(),
+                    dosageAmount = doc.getDouble("dosageAmount") ?: 0.0,
+                    dosageUnit = doc.getString("dosageUnit") ?: "",
+                    times = (doc.get("times") as? List<Map<String, Any>>)?.mapNotNull {
+                        val hour = (it["hour"] as? Long)?.toInt()
+                        val minute = (it["minute"] as? Long)?.toInt()
+                        if (hour != null && minute != null) {
+                            ca.sheridancollege.medreminder.domain.model.MedicationTime(hour, minute)
+                        } else null
+                    } ?: emptyList(),
                     days = (doc.get("days") as? List<String>)?.mapNotNull { DayOfWeek.fromCode(it) } ?: emptyList(),
                     isActive = doc.getBoolean("isActive") ?: true,
                     notes = doc.getString("notes") ?: "",

@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import ca.sheridancollege.medreminder.data.repository.DoseEventRepository
 import ca.sheridancollege.medreminder.data.repository.MedicationRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var repository: MedicationRepository
+    
+    @Inject
+    lateinit var doseEventRepository: DoseEventRepository
 
     companion object {
         const val ACTION_MARK_TAKEN = "ca.sheridancollege.medreminder.MARK_TAKEN"
@@ -23,15 +27,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        val doseId  = intent.getIntExtra(MedicationAlarmScheduler.KEY_DOSE_ID, 0)
         val medId   = intent.getIntExtra(MedicationAlarmScheduler.KEY_MED_ID, 0)
-        val medName = intent.getStringExtra(MedicationAlarmScheduler.KEY_MED_NAME) ?: ""
-        val dosage  = intent.getStringExtra(MedicationAlarmScheduler.KEY_MED_DOSAGE) ?: ""
         val hour    = intent.getIntExtra(MedicationAlarmScheduler.KEY_HOUR, -1)
         val minute  = intent.getIntExtra(MedicationAlarmScheduler.KEY_MINUTE, -1)
 
         // Dismiss the notification
         (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .cancel(medId)
+            .cancel(MedicationAlarmScheduler.getRequestCode(doseId))
 
         when (intent.action) {
             ACTION_MARK_TAKEN -> {
@@ -49,24 +52,12 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 }
             }
             ACTION_SNOOZE -> {
-                // Fire again in 10 minutes using AlarmManager
-                val snoozeTime = System.currentTimeMillis() + (10 * 60 * 1000)
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE)
-                    as android.app.AlarmManager
-                val snoozeIntent = android.app.PendingIntent.getBroadcast(
-                    context, medId + 30000,
-                    Intent(context, MedicationAlarmReceiver::class.java).apply {
-                        putExtra(MedicationAlarmScheduler.KEY_MED_ID, medId)
-                        putExtra(MedicationAlarmScheduler.KEY_MED_NAME, medName)
-                        putExtra(MedicationAlarmScheduler.KEY_MED_DOSAGE, dosage)
-                        putExtra(MedicationAlarmScheduler.KEY_HOUR, hour)
-                        putExtra(MedicationAlarmScheduler.KEY_MINUTE, minute)
-                    },
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                )
-                alarmManager.setAndAllowWhileIdle(
-                    android.app.AlarmManager.RTC_WAKEUP, snoozeTime, snoozeIntent
-                )
+                CoroutineScope(Dispatchers.IO).launch {
+                    val doseEvent = doseEventRepository.getDoseEventById(doseId)
+                    if (doseEvent != null) {
+                        MedicationAlarmScheduler.snooze(context, doseEvent)
+                    }
+                }
             }
         }
     }

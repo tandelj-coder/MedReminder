@@ -11,6 +11,7 @@ import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.domain.model.MedicationTime
 import ca.sheridancollege.medreminder.domain.model.MedicationType
 import ca.sheridancollege.medreminder.domain.usecase.AddMedicationUseCase
+import ca.sheridancollege.medreminder.worker.DoseEventGenerationWorker
 import ca.sheridancollege.medreminder.worker.MedicationAlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -184,19 +185,11 @@ class AddMedicationViewModel @Inject constructor(
             if (state.isEditMode) {
                 repository.updateMedication(medication)
             } else {
-                val id = addMedication(medication)
-                // Schedule alarms for each time
-                state.times.forEach { time ->
-                    MedicationAlarmScheduler.schedule(
-                        context = context,
-                        medicationId = id.toInt(),
-                        medicationName = medication.name,
-                        dosage = "${medication.dosageAmount} ${medication.dosageUnit}",
-                        hour = time.hour,
-                        minute = time.minute
-                    )
-                }
+                repository.insertMedication(medication)
             }
+            // Trigger generation of DoseEvents and Alarms immediately
+            DoseEventGenerationWorker.scheduleOnAppStart(context)
+
             _uiState.update { it.copy(isSaving = false, isSaved = true) }
         }
     }
