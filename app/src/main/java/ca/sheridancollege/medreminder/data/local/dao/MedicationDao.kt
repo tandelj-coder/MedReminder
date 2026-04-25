@@ -22,17 +22,8 @@ interface MedicationDao {
     @Delete
     suspend fun delete(medication: MedicationEntity)
 
-    @Query("UPDATE medications SET isTakenToday = 1, takenTimestamp = :timestamp WHERE id = :id")
-    suspend fun markAsTaken(id: Int, timestamp: Long)
-
-    @Query("UPDATE medications SET isTakenToday = 0, takenTimestamp = NULL")
-    suspend fun resetAllDailyStatus()
-
     @Query("SELECT * FROM medications WHERE isActive = 1 AND days LIKE '%' || :dayCode || '%' ORDER BY timeHour, timeMinute")
     fun getMedicationsForDay(dayCode: String): Flow<List<MedicationEntity>>
-
-    @Query("SELECT COUNT(*) FROM medications WHERE isActive = 1 AND isTakenToday = 1")
-    fun getTakenCountToday(): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM medications WHERE isActive = 1")
     fun getTotalActiveCount(): Flow<Int>

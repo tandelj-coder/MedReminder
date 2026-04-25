@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
+import ca.sheridancollege.medreminder.domain.model.DrugSuggestion
 import ca.sheridancollege.medreminder.ui.theme.*
 import java.util.Locale
 
@@ -55,7 +56,6 @@ fun AddMedicationScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Racing Ambient Glow
         Box(
             modifier = Modifier
                 .size(300.dp)
@@ -70,14 +70,14 @@ fun AddMedicationScreen(
             containerColor = Color.Transparent,
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { 
+                    title = {
                         Text(
-                            if (medicationId == 0) "NEW ENTRY" else "EDIT ENTRY", 
-                            style = MaterialTheme.typography.labelLarge, 
+                            if (medicationId == 0) "NEW ENTRY" else "EDIT ENTRY",
+                            style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onBackground,
                             letterSpacing = 2.sp,
                             fontWeight = FontWeight.Black
-                        ) 
+                        )
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
@@ -98,12 +98,16 @@ fun AddMedicationScreen(
             ) {
                 Spacer(Modifier.height(16.dp))
 
-                // Racing Style Inputs
-                RacingTextField(
+                // Medication name with drug autocomplete
+                DrugAutocompleteField(
                     value = uiState.name,
                     onValueChange = viewModel::onNameChange,
-                    label = "MEDICATION NAME",
-                    placeholder = "ENTER NAME...",
+                    suggestions = uiState.drugSuggestions,
+                    isSearching = uiState.isSearching,
+                    showSuggestions = uiState.showSuggestions,
+                    searchError = uiState.searchError,
+                    onSuggestionSelected = viewModel::onDrugSelected,
+                    onDismiss = viewModel::onDismissSuggestions,
                     error = uiState.nameError
                 )
 
@@ -114,7 +118,6 @@ fun AddMedicationScreen(
                     placeholder = "ENTER DOSAGE (e.g. 500)..."
                 )
 
-                // Time Selector (Racing Style)
                 RacingSelector(
                     label = "REMINDER TIME",
                     value = String.format(Locale.getDefault(), "%02d:%02d", uiState.timeHour, uiState.timeMinute),
@@ -126,7 +129,6 @@ fun AddMedicationScreen(
                     }
                 )
 
-                // Day Selector (Racing Chips)
                 Column {
                     Text("FREQUENCY", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
@@ -168,14 +170,13 @@ fun AddMedicationScreen(
                 RacingTextField(
                     value = uiState.notes,
                     onValueChange = viewModel::onNotesChange,
-                    label = "NOTES (OPTIONAL)",
+                    label = "NOTES / GENERIC NAME (OPTIONAL)",
                     placeholder = "ADD NOTES...",
                     singleLine = false
                 )
 
                 Spacer(Modifier.height(32.dp))
 
-                // High-Contrast Racing Button
                 Button(
                     onClick = viewModel::onSave,
                     modifier = Modifier
@@ -193,9 +194,98 @@ fun AddMedicationScreen(
                         Text("CONFIRM SESSION", color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 1.sp)
                     }
                 }
-                
+
                 Spacer(Modifier.height(40.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun DrugAutocompleteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    suggestions: List<DrugSuggestion>,
+    isSearching: Boolean,
+    showSuggestions: Boolean,
+    searchError: String?,
+    onSuggestionSelected: (DrugSuggestion) -> Unit,
+    onDismiss: () -> Unit,
+    error: String? = null
+) {
+    Column {
+        Text("MEDICATION NAME", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+
+        Box {
+            TextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { Text("ENTER NAME...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, if (error != null) F1Red else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = F1Red,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                ),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                isError = error != null,
+                trailingIcon = {
+                    if (isSearching) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = F1Red, strokeWidth = 2.dp)
+                    }
+                }
+            )
+
+            if (showSuggestions) {
+                DropdownMenu(
+                    expanded = true,
+                    onDismissRequest = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 240.dp)
+                ) {
+                    if (suggestions.isEmpty()) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "No results found",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = onDismiss
+                        )
+                    } else {
+                        suggestions.forEach { suggestion ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        suggestion.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = { onSuggestionSelected(suggestion) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (error != null) {
+            Text(error, style = MaterialTheme.typography.bodySmall, color = F1Red, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
+        }
+        if (searchError != null) {
+            Text(searchError, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
         }
     }
 }

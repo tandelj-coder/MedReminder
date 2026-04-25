@@ -9,6 +9,7 @@ import ca.sheridancollege.medreminder.domain.model.IntakeLog
 import ca.sheridancollege.medreminder.domain.model.Medication
 import ca.sheridancollege.medreminder.domain.model.PillShape
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
 import javax.inject.Inject
@@ -28,13 +29,24 @@ class MedicationRepositoryImpl @Inject constructor(
             list.map { it.toDomain() }
         }
 
-    override fun getMedicationsForDay(dayCode: String): Flow<List<Medication>> =
-        medicationDao.getMedicationsForDay(dayCode).map { list ->
-            list.map { it.toDomain() }
-        }
+    override fun getMedicationsForDay(dayCode: String): Flow<List<Medication>> {
+        val (startOfDay, endOfDay) = todayRange()
+        return medicationDao.getMedicationsForDay(dayCode)
+            .combine(intakeLogDao.getLogsForDay(startOfDay, endOfDay)) { meds, logs ->
+                val takenMap = logs.associate { it.medicationId to it.takenAt }
+                meds.map { entity ->
+                    entity.toDomain().copy(
+                        isTakenToday = takenMap.containsKey(entity.id),
+                        takenTimestamp = takenMap[entity.id]
+                    )
+                }
+            }
+    }
 
-    override fun getTakenCountToday(): Flow<Int> =
-        medicationDao.getTakenCountToday()
+    override fun getTakenCountToday(): Flow<Int> {
+        val (startOfDay, endOfDay) = todayRange()
+        return intakeLogDao.getTakenCountForDay(startOfDay, endOfDay)
+    }
 
     override fun getTotalActiveCount(): Flow<Int> =
         medicationDao.getTotalActiveCount()
@@ -67,19 +79,12 @@ class MedicationRepositoryImpl @Inject constructor(
         scheduledMinute: Int
     ) {
         val entity = medicationDao.getMedicationById(medicationId) ?: return
-        
-        // Decrement remaining quantity if tracking is enabled
-        val updatedEntity = if (entity.stockQuantity > 0) {
-            entity.copy(
-                isTakenToday = true,
-                takenTimestamp = timestamp,
-                remainingQuantity = (entity.remainingQuantity - 1).coerceAtLeast(0)
+
+        if (entity.stockQuantity > 0) {
+            medicationDao.update(
+                entity.copy(remainingQuantity = (entity.remainingQuantity - 1).coerceAtLeast(0))
             )
-        } else {
-            entity.copy(isTakenToday = true, takenTimestamp = timestamp)
         }
-        
-        medicationDao.update(updatedEntity)
 
         val scheduled = Calendar.getInstance().apply {
             timeInMillis = timestamp
@@ -87,8 +92,7 @@ class MedicationRepositoryImpl @Inject constructor(
             set(Calendar.MINUTE, scheduledMinute)
             set(Calendar.SECOND, 0)
         }.timeInMillis
-        val minutesDiff = Math.abs(timestamp - scheduled) / 60000
-        val wasOnTime = minutesDiff <= 60
+        val wasOnTime = Math.abs(timestamp - scheduled) / 60000 <= 60
 
         intakeLogDao.insert(
             IntakeLogEntity(
@@ -100,27 +104,37 @@ class MedicationRepositoryImpl @Inject constructor(
                 wasOnTime = wasOnTime
             )
         )
-        
-        firestoreSyncRepository.uploadMedication(updatedEntity.toDomain())
+
+        firestoreSyncRepository.uploadMedication(entity.toDomain())
     }
 
-    override suspend fun resetAllDailyStatus() =
-        medicationDao.resetAllDailyStatus()
+    override suspend fun resetAllDailyStatus() {
+        val (startOfDay, endOfDay) = todayRange()
+        intakeLogDao.deleteLogsForDay(startOfDay, endOfDay)
+    }
 
     // ─── Logs ───────────────────────────────────────────────────────
 
     override fun getAllLogs(): Flow<List<IntakeLog>> =
-        intakeLogDao.getAllLogs().map { list ->
-            list.map { it.toDomain() }
-        }
+        intakeLogDao.getAllLogs().map { list -> list.map { it.toDomain() } }
 
     override fun getLogsForDay(startOfDay: Long, endOfDay: Long): Flow<List<IntakeLog>> =
-        intakeLogDao.getLogsForDay(startOfDay, endOfDay).map { list ->
-            list.map { it.toDomain() }
-        }
+        intakeLogDao.getLogsForDay(startOfDay, endOfDay).map { list -> list.map { it.toDomain() } }
 
     override suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLog? =
         intakeLogDao.getLastIntakeForMedication(medicationId)?.toDomain()
+
+    // ─── Helpers ────────────────────────────────────────────────────
+
+    private fun todayRange(): Pair<Long, Long> {
+        val start = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        return start to (start + 24 * 60 * 60 * 1000L - 1)
+    }
 
     // ─── Mappers ────────────────────────────────────────────────────
 
@@ -131,8 +145,6 @@ class MedicationRepositoryImpl @Inject constructor(
         timeHour = timeHour,
         timeMinute = timeMinute,
         days = DayOfWeek.fromCodes(days),
-        isTakenToday = isTakenToday,
-        takenTimestamp = takenTimestamp,
         isActive = isActive,
         notes = notes,
         pillColor = pillColor,
@@ -150,8 +162,6 @@ class MedicationRepositoryImpl @Inject constructor(
         timeHour = timeHour,
         timeMinute = timeMinute,
         days = DayOfWeek.toCodes(days),
-        isTakenToday = isTakenToday,
-        takenTimestamp = takenTimestamp,
         isActive = isActive,
         notes = notes,
         pillColor = pillColor,

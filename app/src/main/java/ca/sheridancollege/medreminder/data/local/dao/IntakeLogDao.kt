@@ -11,15 +11,21 @@ interface IntakeLogDao {
     fun getAllLogs(): Flow<List<IntakeLogEntity>>
 
     @Query("""
-        SELECT * FROM intake_logs 
+        SELECT * FROM intake_logs
         WHERE takenAt >= :startOfDay AND takenAt <= :endOfDay
         ORDER BY takenAt DESC
     """)
     fun getLogsForDay(startOfDay: Long, endOfDay: Long): Flow<List<IntakeLogEntity>>
 
     @Query("""
-        SELECT * FROM intake_logs 
-        WHERE medicationId = :medicationId 
+        SELECT COUNT(*) FROM intake_logs
+        WHERE takenAt >= :startOfDay AND takenAt <= :endOfDay
+    """)
+    fun getTakenCountForDay(startOfDay: Long, endOfDay: Long): Flow<Int>
+
+    @Query("""
+        SELECT * FROM intake_logs
+        WHERE medicationId = :medicationId
         ORDER BY takenAt DESC LIMIT 30
     """)
     fun getLogsForMedication(medicationId: Int): Flow<List<IntakeLogEntity>>
@@ -30,6 +36,9 @@ interface IntakeLogDao {
     @Query("DELETE FROM intake_logs WHERE medicationId = :medicationId")
     suspend fun deleteLogsForMedication(medicationId: Int)
 
+    @Query("DELETE FROM intake_logs WHERE takenAt >= :startOfDay AND takenAt <= :endOfDay")
+    suspend fun deleteLogsForDay(startOfDay: Long, endOfDay: Long)
+
     @Query("""
         SELECT * FROM intake_logs
         WHERE medicationId = :medicationId
@@ -38,7 +47,7 @@ interface IntakeLogDao {
     suspend fun getLastIntakeForMedication(medicationId: Int): IntakeLogEntity?
 
     @Query("""
-        SELECT COUNT(*) FROM intake_logs 
+        SELECT COUNT(*) FROM intake_logs
         WHERE takenAt >= :startOfDay AND takenAt <= :endOfDay
     """)
     suspend fun getCountForDay(startOfDay: Long, endOfDay: Long): Int

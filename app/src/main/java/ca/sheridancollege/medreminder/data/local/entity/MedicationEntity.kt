@@ -12,11 +12,8 @@ data class MedicationEntity(
     val timeHour: Int,
     val timeMinute: Int,
     val days: String,
-    val isTakenToday: Boolean = false,
-    val takenTimestamp: Long? = null,
     val isActive: Boolean = true,
     val notes: String = "",
-    // Unique features
     val pillColor: String = "#2196F3",
     val pillShape: String = "ROUND",
     val stockQuantity: Int = 0,

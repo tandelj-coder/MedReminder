@@ -4,10 +4,12 @@ import app.cash.turbine.test
 import ca.sheridancollege.medreminder.domain.model.AdherenceStats
 import ca.sheridancollege.medreminder.domain.model.DayOfWeek
 import ca.sheridancollege.medreminder.domain.model.Medication
+import ca.sheridancollege.medreminder.domain.usecase.DeleteMedicationUseCase
 import ca.sheridancollege.medreminder.domain.usecase.GetAdherenceStatsUseCase
 import ca.sheridancollege.medreminder.domain.usecase.GetTodayMedicationsUseCase
 import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenResult
 import ca.sheridancollege.medreminder.domain.usecase.MarkAsTakenUseCase
+import ca.sheridancollege.medreminder.domain.usecase.ResetDailyStatusUseCase
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -31,6 +33,8 @@ class TodayViewModelTest {
     private lateinit var getTodayMedications: GetTodayMedicationsUseCase
     private lateinit var markAsTaken: MarkAsTakenUseCase
     private lateinit var getAdherenceStats: GetAdherenceStatsUseCase
+    private lateinit var deleteMedication: DeleteMedicationUseCase
+    private lateinit var resetDailyStatus: ResetDailyStatusUseCase
     private lateinit var viewModel: TodayViewModel
 
     private val testDispatcher = StandardTestDispatcher()
@@ -48,9 +52,13 @@ class TodayViewModelTest {
         getTodayMedications = mockk()
         markAsTaken = mockk()
         getAdherenceStats = mockk()
+        deleteMedication = mockk()
+        resetDailyStatus = mockk()
         every { getTodayMedications() } returns flowOf(fakeMeds)
         every { getAdherenceStats() } returns flowOf(AdherenceStats(2, 0, 3))
-        viewModel = TodayViewModel(getTodayMedications, markAsTaken, getAdherenceStats)
+        coEvery { deleteMedication(any()) } returns Unit
+        coEvery { resetDailyStatus() } returns Unit
+        viewModel = TodayViewModel(getTodayMedications, markAsTaken, getAdherenceStats, deleteMedication, resetDailyStatus)
     }
 
     @After
