@@ -15,7 +15,7 @@ import ca.sheridancollege.medreminder.data.local.entity.MedicationEntity
 
 @Database(
     entities = [MedicationEntity::class, IntakeLogEntity::class, DoseEventEntity::class, DrugSuggestionEntity::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(MedicationConverters::class)
